@@ -10,32 +10,12 @@ import { useRouter } from "next/navigation";
 import { useTutoringStore } from "@/stores/useTutoringStore";
 import { Whiteboard, WhiteboardRef } from "@/components/whiteboard/Whiteboard";
 import { ChatInterface } from "@/components/chat/ChatInterface";
+import { RestartButton } from "@/components/controls/RestartButton";
 
 export default function WorkspacePage() {
   const router = useRouter();
   const currentProblem = useTutoringStore((state) => state.currentProblem);
-  const resetSession = useTutoringStore((state) => state.resetSession);
   const whiteboardRef = useRef<WhiteboardRef>(null);
-
-  /**
-   * Handle restart problem
-   */
-  const handleRestartProblem = () => {
-    // Clear conversation history (keep currentProblem)
-    const messages = useTutoringStore.getState().messages;
-    useTutoringStore.setState({
-      messages: [],
-      isLoading: false,
-    });
-
-    // Clear whiteboard canvas
-    if (whiteboardRef.current) {
-      whiteboardRef.current.clearCanvas();
-    }
-
-    // Reinitialize tutoring session (problem remains visible)
-    // Session will restart when user sends first message
-  };
 
   /**
    * Handle return to home
@@ -64,13 +44,7 @@ export default function WorkspacePage() {
 
         {/* Session controls */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleRestartProblem}
-            className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Restart problem"
-          >
-            Restart Problem
-          </button>
+          <RestartButton />
           <button
             onClick={handleReturnToHome}
             className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"

@@ -26,6 +26,7 @@ interface CanvasStore {
   addTutorAnnotation: (annotation: TutorAnnotation) => void;
   removeTutorAnnotation: (id: string) => void;
   clearOldestAnnotation: () => void;
+  clearAllAnnotations: () => void; // Story 3.6
 }
 
 export const useCanvasStore = create<CanvasStore>((set) => ({
@@ -77,5 +78,11 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
         newAnnotations.shift(); // Remove first (oldest) annotation
       }
       return { tutorAnnotations: newAnnotations };
+    }),
+
+  // Story 3.6: Clear all annotations
+  clearAllAnnotations: () =>
+    set({
+      tutorAnnotations: [],
     }),
 }));
