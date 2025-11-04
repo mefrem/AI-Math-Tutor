@@ -13,12 +13,14 @@ import {
   useImperativeHandle,
   forwardRef,
 } from "react";
-import { Stage, Layer, Text, Image as KonvaImage } from "react-konva";
+import { Stage, Layer, Text, Image as KonvaImage, Line } from "react-konva";
 import type Konva from "konva";
 import type { MathProblem } from "@/types/models";
 import { renderProblem } from "@/services/canvas/problemRenderer";
 import { semanticRegistry } from "@/services/canvas/semanticRegistry";
 import type { RenderedElement } from "@/services/canvas/problemRenderer";
+import { useCanvasStore } from "@/stores/useCanvasStore";
+import type { Line as LineType } from "@/types/canvas";
 
 interface WhiteboardProps {
   width?: number;
@@ -29,6 +31,7 @@ interface WhiteboardProps {
 
 export interface WhiteboardRef {
   clearCanvas: () => void;
+  clearDrawings: () => void;
 }
 
 /**
@@ -49,6 +52,8 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
   ) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const layerRef = useRef<Konva.Layer>(null);
+    const drawingLayerRef = useRef<Konva.Layer>(null);
+    const stageRef = useRef<Konva.Stage>(null);
     const [canvasSize, setCanvasSize] = useState({
       width: Math.max(MIN_WIDTH, width),
       height: Math.max(MIN_HEIGHT, height),
@@ -60,6 +65,13 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
       new Map()
     );
     const [isRendering, setIsRendering] = useState(false);
+
+    // Canvas store for drawing state
+    const { lines, isDrawing, addLine, setIsDrawing, clearAllLines } =
+      useCanvasStore();
+
+    // Local state for current drawing line
+    const [currentLine, setCurrentLine] = useState<number[]>([]);
 
     /**
      * Handle window resize and container sizing
@@ -176,6 +188,68 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
     }, [problem]);
 
     /**
+     * Handle mouse/touch down - start drawing
+     */
+    const handlePointerDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+      setIsDrawing(true);
+      const stage = e.target.getStage();
+      if (!stage) return;
+
+      const pos = stage.getPointerPosition();
+      if (!pos) return;
+
+      setCurrentLine([pos.x, pos.y]);
+    };
+
+    /**
+     * Handle mouse/touch move - continue drawing
+     */
+    const handlePointerMove = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+      if (!isDrawing) return;
+
+      const stage = e.target.getStage();
+      if (!stage) return;
+
+      const pos = stage.getPointerPosition();
+      if (!pos) return;
+
+      // Add point to current line
+      setCurrentLine((prev) => [...prev, pos.x, pos.y]);
+    };
+
+    /**
+     * Handle mouse/touch up - finish drawing
+     */
+    const handlePointerUp = () => {
+      if (!isDrawing) return;
+      setIsDrawing(false);
+
+      // Save the completed line to store
+      if (currentLine.length >= 4) {
+        // At least 2 points (x1, y1, x2, y2)
+        const newLine: LineType = {
+          id: `line-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          points: currentLine,
+          color: "#4A90E2", // Medium blue
+          strokeWidth: 4,
+          timestamp: Date.now(),
+        };
+        addLine(newLine);
+      }
+
+      // Reset current line
+      setCurrentLine([]);
+    };
+
+    /**
+     * Clear all student drawings (keep problem visible)
+     */
+    const clearDrawings = () => {
+      clearAllLines();
+      setCurrentLine([]);
+    };
+
+    /**
      * Clear canvas
      */
     const clearCanvas = () => {
@@ -190,15 +264,19 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
       setRenderedElements([]);
       semanticRegistry.clear();
 
+      // Clear drawings
+      clearDrawings();
+
       // Call optional onClear callback
       if (onClear) {
         onClear();
       }
     };
 
-    // Expose clearCanvas method via ref
+    // Expose clearCanvas and clearDrawings methods via ref
     useImperativeHandle(ref, () => ({
       clearCanvas,
+      clearDrawings,
     }));
 
     return (
@@ -209,10 +287,18 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
         aria-label="Whiteboard canvas"
       >
         <Stage
+          ref={stageRef}
           width={canvasSize.width}
           height={canvasSize.height}
           style={{ backgroundColor: "#FFFFFF" }}
+          onMouseDown={handlePointerDown}
+          onMouseMove={handlePointerMove}
+          onMouseUp={handlePointerUp}
+          onTouchStart={handlePointerDown}
+          onTouchMove={handlePointerMove}
+          onTouchEnd={handlePointerUp}
         >
+          {/* Problem rendering layer */}
           <Layer ref={layerRef}>
             {/* Render problem elements */}
             {renderedElements.map((element, index) => {
@@ -268,6 +354,36 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
                 fontSize={24}
                 fontFamily="Arial, sans-serif"
                 fill="#999999"
+              />
+            )}
+          </Layer>
+
+          {/* Drawing layer for student work */}
+          <Layer ref={drawingLayerRef}>
+            {/* Render all completed lines */}
+            {lines.map((line) => (
+              <Line
+                key={line.id}
+                points={line.points}
+                stroke={line.color}
+                strokeWidth={line.strokeWidth}
+                tension={0.5}
+                lineCap="round"
+                lineJoin="round"
+                globalCompositeOperation="source-over"
+              />
+            ))}
+
+            {/* Render current line being drawn */}
+            {currentLine.length > 0 && (
+              <Line
+                points={currentLine}
+                stroke="#4A90E2"
+                strokeWidth={4}
+                tension={0.5}
+                lineCap="round"
+                lineJoin="round"
+                globalCompositeOperation="source-over"
               />
             )}
           </Layer>
