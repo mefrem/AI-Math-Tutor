@@ -10,10 +10,14 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "html2canvas": "^1.4.1",
+    "katex": "^0.16.25",
+    "konva": "^10.0.8",
     "next": "^14.2.0",
     "openai": "^6.8.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-konva": "^18.2.10",
     "zustand": "^4.5.7"
   },
   "devDependencies": {

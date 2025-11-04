@@ -75,13 +75,26 @@ Remember: Your goal is to guide students to discover solutions themselves throug
 /**
  * OCR Parsing Prompt V1
  *
- * This prompt instructs GPT-4 Vision to extract mathematical problems from images.
- * Used for image upload OCR parsing (Story 2.3).
- *
- * Requirements:
- * - Extract mathematical problem as plain text
- * - Preserve proper mathematical notation
- * - Handle both printed and handwritten problems
+ * This prompt is used for extracting mathematical problems from images
+ * using GPT-4 Vision API.
  */
 export const OCR_PARSING_PROMPT_V1 =
   "Extract the mathematical problem from this image as plain text with proper mathematical notation.";
+
+/**
+ * Practice Problem Generation Prompt V1
+ *
+ * This prompt is used for generating practice problems based on a topic
+ * using GPT-4 Turbo.
+ */
+export const PRACTICE_PROBLEM_GENERATION_PROMPT_V1 = (topic: string) =>
+  `Generate a single elementary or middle school level math problem (grades 3-8) on the topic: "${topic}". 
+
+Requirements:
+- The problem should be age-appropriate for elementary or middle school students (ages 8-14)
+- Include only the problem statement, no solution or hints
+- Use clear, simple language
+- For word problems, make them relatable and engaging
+- Keep the problem focused on the specified topic
+
+Return only the problem statement, nothing else.`;

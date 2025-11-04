@@ -3,7 +3,7 @@
  * These types define the contract between frontend and backend
  */
 
-import type { ConversationMessage } from "./models";
+import type { ConversationMessage, MathProblem } from "./models";
 
 /**
  * Chat API Request
@@ -45,6 +45,21 @@ export interface ParseImageResponse {
   success: boolean;
   parsedContent: string; // Extracted problem text
   confidence?: number; // 0-1 scale (optional)
+}
+
+/**
+ * Generate Problem API Request
+ */
+export interface GenerateProblemRequest {
+  topic: string; // Subject area for practice (e.g., "fractions")
+  difficulty?: "easy" | "medium" | "hard"; // Optional difficulty level
+}
+
+/**
+ * Generate Problem API Response
+ */
+export interface GenerateProblemResponse {
+  problem: MathProblem; // Generated problem object
 }
 
 /**

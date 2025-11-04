@@ -5,21 +5,33 @@
 
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { TextProblemInput } from "@/components/problem-input/TextProblemInput";
 import { ImageProblemInput } from "@/components/problem-input/ImageProblemInput";
+import { PracticeProblemInput } from "@/components/problem-input/PracticeProblemInput";
 import { useTutoringStore } from "@/stores/useTutoringStore";
 import type { MathProblem } from "@/types/models";
 
-type InputMode = "text" | "image";
+type InputMode = "text" | "image" | "practice";
 
-export default function ProblemInputPage() {
+function ProblemInputContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [inputMode, setInputMode] = useState<InputMode>("text");
   const setCurrentProblem = useTutoringStore(
     (state) => state.setCurrentProblem
   );
+
+  // Detect practice mode from URL search params
+  useEffect(() => {
+    const mode = searchParams.get("mode");
+    if (mode === "practice") {
+      setInputMode("practice");
+    } else {
+      setInputMode("text");
+    }
+  }, [searchParams]);
 
   const handleSubmit = (problem: MathProblem) => {
     // Store problem in Zustand store
@@ -41,6 +53,17 @@ export default function ProblemInputPage() {
     setInputMode("image");
   };
 
+  const getPageTitle = () => {
+    switch (inputMode) {
+      case "practice":
+        return "Practice with a new problem";
+      case "image":
+        return "Upload an image of your math problem";
+      default:
+        return "Enter your math problem below";
+    }
+  };
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4 py-12 bg-gradient-to-b from-blue-50 to-white">
       <div className="w-full max-w-2xl mx-auto">
@@ -48,14 +71,16 @@ export default function ProblemInputPage() {
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
             AI Math Tutor
           </h1>
-          <p className="text-lg text-gray-600">
-            {inputMode === "text"
-              ? "Enter your math problem below"
-              : "Upload an image of your math problem"}
-          </p>
+          <p className="text-lg text-gray-600">{getPageTitle()}</p>
         </div>
 
-        {inputMode === "text" ? (
+        {inputMode === "practice" ? (
+          <PracticeProblemInput
+            onSubmit={handleSubmit}
+            onBack={handleBack}
+            onSwitchToText={handleSwitchToText}
+          />
+        ) : inputMode === "text" ? (
           <TextProblemInput
             onSubmit={handleSubmit}
             onBack={handleBack}
@@ -70,5 +95,13 @@ export default function ProblemInputPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function ProblemInputPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ProblemInputContent />
+    </Suspense>
   );
 }

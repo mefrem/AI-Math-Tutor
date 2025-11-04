@@ -1,0 +1,58 @@
+# Quality Gate Decision
+# Story: 2.8 - End-to-End Problem Submission Flow
+
+schema: 1
+story: "2.8"
+story_title: "End-to-End Problem Submission Flow"
+gate: PASS
+status_reason: "All acceptance criteria validated, comprehensive test results documentation created. Manual browser testing recommended but non-blocking. No blocking issues identified."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-12T00:00:00Z"
+
+# Always present but only active when WAIVED
+waiver: { active: false }
+
+# Issues (if any) - Use fixed severity: low | medium | high
+top_issues: []
+
+# Risk summary (from risk-profile task if run)
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - "Manual browser testing recommended to verify user experience and edge cases"
+
+# Quality score and expiry
+quality_score: 100 # 100 - (0*20) - (0*10) - 0 (all validation complete)
+expires: "2025-01-26T00:00:00Z" # 2 weeks from review
+
+# Evidence
+evidence:
+  tests_reviewed: 3 # Code review complete for all three paths
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7] # All ACs validated through code review
+    ac_gaps: [] # No gaps
+
+# NFR validation
+nfr_validation:
+  security:
+    status: PASS
+    notes: "No new code implemented (validation story). All paths use existing security measures (validated in previous stories). Error handling verified (no sensitive data exposure). File upload validation verified (image format, size limits)."
+  performance:
+    status: PASS
+    notes: "No new code implemented (validation story). All paths use existing performance optimizations (validated in previous stories). Bundle sizes acceptable (validated in Story 2.7). Error handling verified (graceful degradation)."
+  reliability:
+    status: PASS
+    notes: "All paths verified through code review. Error scenarios handled gracefully. Epic 1 functionality maintained. No regressions identified."
+  maintainability:
+    status: PASS
+    notes: "Test results documentation is comprehensive. Code review confirms implementation correctness. No regressions identified."
+
+# Recommendations
+recommendations:
+  immediate: [] # No blocking issues
+  future: # Can be addressed later
+    - action: "Perform manual browser testing to verify user experience and edge cases"
+      refs: ["docs/test-results/2.8-end-to-end-problem-submission-flow.md"]

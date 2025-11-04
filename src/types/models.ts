@@ -38,6 +38,19 @@ export interface Dimensions {
 }
 
 /**
+ * Semantic Registry for canvas elements
+ * Used to register semantic IDs for key problem elements (e.g., numerator, denominator, equals sign)
+ * Supports future tutor annotations (Story 3.4)
+ */
+export interface SemanticRegistry {
+  [semanticId: string]: {
+    position: Position;
+    size: Dimensions;
+    label: string;
+  };
+}
+
+/**
  * MathProblem interface for user-submitted problems
  * Used for problems entered via text input or image upload
  */

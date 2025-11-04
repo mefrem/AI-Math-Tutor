@@ -2,3 +2,5 @@
 @tailwind components;
 @tailwind utilities;
 
+/* KaTeX CSS for mathematical notation rendering */
+@import "katex/dist/katex.min.css";

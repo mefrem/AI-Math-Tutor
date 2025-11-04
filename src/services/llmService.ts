@@ -4,10 +4,11 @@
  */
 
 import OpenAI from "openai";
-import type { ConversationMessage } from "@/types/models";
+import type { ConversationMessage, MathProblem } from "@/types/models";
 import {
   SOCRATIC_TUTOR_SYSTEM_PROMPT_V1,
   OCR_PARSING_PROMPT_V1,
+  PRACTICE_PROBLEM_GENERATION_PROMPT_V1,
 } from "./prompts";
 
 /**
@@ -71,6 +72,69 @@ class LLMService {
 
     // Return parsed text
     return response.content.trim();
+  }
+
+  /**
+   * Generate a practice problem for a given topic
+   * @param topic - Math topic (e.g., "fractions", "algebra")
+   * @param difficulty - Optional difficulty level (not used in MVP, reserved for future)
+   * @returns Generated MathProblem object
+   */
+  async generatePracticeProblem(
+    topic: string,
+    difficulty?: "easy" | "medium" | "hard"
+  ): Promise<MathProblem> {
+    // Format prompt with topic
+    const prompt = PRACTICE_PROBLEM_GENERATION_PROMPT_V1(topic);
+
+    // Format messages for GPT-4 API
+    const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+      {
+        role: "system",
+        content:
+          "You are a math problem generator for grades 3-8. Generate appropriate problems for students to practice.",
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ];
+
+    // Call GPT-4 API
+    const completion = await this.client.chat.completions.create({
+      model: "gpt-4-turbo",
+      messages,
+      temperature: 0.8, // Higher for variety
+      max_tokens: 200,
+    });
+
+    // Extract response
+    const response = completion.choices[0]?.message;
+
+    if (!response || !response.content) {
+      throw new Error("No response from OpenAI API for problem generation");
+    }
+
+    // Extract generated problem text
+    const problemText = response.content.trim();
+
+    if (!problemText || problemText.length === 0) {
+      throw new Error("Generated problem is empty");
+    }
+
+    // Create MathProblem object
+    const problem: MathProblem = {
+      problemId: `problem_${Date.now()}_${Math.random()
+        .toString(36)
+        .substring(2, 9)}`,
+      source: "generated",
+      rawContent: problemText,
+      parsedContent: problemText, // Same as rawContent (no parsing yet)
+      topic: topic,
+      difficulty: difficulty, // Optional difficulty level
+    };
+
+    return problem;
   }
 
   /**
