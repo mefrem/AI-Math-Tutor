@@ -157,7 +157,7 @@ class LLMService {
       },
     ];
 
-    // Add conversation history
+    // Add conversation history (text-only, no vision needed for history)
     for (const msg of conversationHistory) {
       messages.push({
         role:
@@ -170,31 +170,83 @@ class LLMService {
       });
     }
 
+    // Determine if we should use Vision API
+    // Use vision when: 1) snapshot provided, 2) not empty, 3) not just data URI prefix
+    const useVision =
+      canvasSnapshot &&
+      canvasSnapshot.length > 100 && // More than just data URI prefix
+      canvasSnapshot.startsWith("data:image/");
+
     // Add current student message
-    messages.push({
-      role: "user",
-      content: message,
-    });
+    // If canvas snapshot provided, use multi-part content (text + image)
+    if (useVision) {
+      messages.push({
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: message,
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: canvasSnapshot,
+            },
+          },
+        ],
+      });
+    } else {
+      messages.push({
+        role: "user",
+        content: message,
+      });
+    }
 
     // Prepare API request
     const requestOptions: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
-      model: "gpt-4-turbo",
+      model: useVision ? "gpt-4-vision-preview" : "gpt-4-turbo",
       messages,
       temperature: 0.7,
       max_tokens: 500,
     };
 
-    // Note: canvasSnapshot will be used in future stories for GPT-4 Vision
-    // For now, we accept it but don't use it
-    if (canvasSnapshot) {
-      // Future: Add vision capability when implementing canvas integration
-      // This will be implemented in Story 3.3
-    }
+    // Call OpenAI API with error handling and fallback
+    let completion: OpenAI.Chat.Completions.ChatCompletion;
+    try {
+      completion = await this.client.chat.completions.create(requestOptions);
+    } catch (error) {
+      // If Vision API fails, fall back to text-only model
+      if (useVision) {
+        console.error(
+          "GPT-4 Vision API failed, falling back to text-only:",
+          error
+        );
 
-    // Call OpenAI API
-    const completion = await this.client.chat.completions.create(
-      requestOptions
-    );
+        // Retry with text-only model
+        const fallbackMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
+          messages
+            .slice(0, -1)
+            .concat({
+              role: "user",
+              content: message,
+            });
+
+        const fallbackOptions: OpenAI.Chat.Completions.ChatCompletionCreateParams =
+          {
+            model: "gpt-4-turbo",
+            messages: fallbackMessages,
+            temperature: 0.7,
+            max_tokens: 500,
+          };
+
+        completion = await this.client.chat.completions.create(
+          fallbackOptions
+        );
+      } else {
+        // Re-throw if not a vision-related error
+        throw error;
+      }
+    }
 
     // Extract response
     const assistantMessage = completion.choices[0]?.message;
