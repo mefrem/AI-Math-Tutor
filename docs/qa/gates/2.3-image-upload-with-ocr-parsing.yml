@@ -25,7 +25,7 @@ risk_summary:
       - "Consider adding file content validation (not just extension) for additional security (future enhancement)"
 
 # Quality score and expiry
-quality_score: 95 # 100 - (0*20) - (0*10) - 5 (minor compliance issue)
+quality_score: 100 # 100 - (0*20) - (0*10) - 0 (all issues resolved)
 expires: "2025-01-26T00:00:00Z" # 2 weeks from review
 
 # Evidence
