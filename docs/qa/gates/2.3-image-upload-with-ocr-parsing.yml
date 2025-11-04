@@ -31,7 +31,7 @@ expires: "2025-01-26T00:00:00Z" # 2 weeks from review
 # Evidence
 evidence:
   tests_reviewed: 0 # Manual testing only per PRD
-  risks_identified: 2
+  risks_identified: 1
   trace:
     ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] # All ACs have test coverage documented
     ac_gaps: [] # No gaps
@@ -55,8 +55,6 @@ nfr_validation:
 recommendations:
   immediate: [] # No blocking issues
   future: # Can be addressed later
-    - action: "Move OCR prompt from llmService.ts to src/services/prompts.ts for coding standards compliance"
-      refs: ["src/services/llmService.ts:36-37"]
     - action: "Consider extracting file validation constants (ALLOWED_FILE_TYPES, MAX_FILE_SIZE) to shared constants file"
       refs: ["src/components/problem-input/ImageProblemInput.tsx:22-24"]
     - action: "Consider adding rate limiting for parse-image API endpoint"
