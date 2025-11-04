@@ -1,0 +1,65 @@
+# Quality Gate Decision
+# Story: 2.3 - Image Upload with OCR Parsing
+
+schema: 1
+story: "2.3"
+story_title: "Image Upload with OCR Parsing"
+gate: PASS
+status_reason: "All acceptance criteria met, code quality is excellent, compliance issue fixed by dev. No blocking issues identified."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-12T00:00:00Z"
+
+# Always present but only active when WAIVED
+waiver: { active: false }
+
+# Issues (if any) - Use fixed severity: low | medium | high
+top_issues: []
+
+# Risk summary (from risk-profile task if run)
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 1 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - "Consider adding rate limiting for parse-image API endpoint (future enhancement)"
+      - "Consider adding file content validation (not just extension) for additional security (future enhancement)"
+
+# Quality score and expiry
+quality_score: 95 # 100 - (0*20) - (0*10) - 5 (minor compliance issue)
+expires: "2025-01-26T00:00:00Z" # 2 weeks from review
+
+# Evidence
+evidence:
+  tests_reviewed: 0 # Manual testing only per PRD
+  risks_identified: 2
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] # All ACs have test coverage documented
+    ac_gaps: [] # No gaps
+
+# NFR validation
+nfr_validation:
+  security:
+    status: PASS
+    notes: "File type validation (PNG, JPG, JPEG only), file size limits (5MB max), API key server-side only, input validation in API route. Consider adding rate limiting and file content validation in future."
+  performance:
+    status: PASS
+    notes: "Fast file validation, asynchronous base64 conversion, asynchronous OCR parsing with loading states. Bundle size: 4.68 KB for problem-input route."
+  reliability:
+    status: PASS
+    notes: "Comprehensive error handling for all failure scenarios, file validation prevents invalid files, API error handling provides recovery options, graceful degradation (manual entry option)."
+  maintainability:
+    status: PASS
+    notes: "Clean component structure, well-documented code, follows project conventions. OCR prompt properly located in prompts.ts file."
+
+# Recommendations
+recommendations:
+  immediate: [] # No blocking issues
+  future: # Can be addressed later
+    - action: "Move OCR prompt from llmService.ts to src/services/prompts.ts for coding standards compliance"
+      refs: ["src/services/llmService.ts:36-37"]
+    - action: "Consider extracting file validation constants (ALLOWED_FILE_TYPES, MAX_FILE_SIZE) to shared constants file"
+      refs: ["src/components/problem-input/ImageProblemInput.tsx:22-24"]
+    - action: "Consider adding rate limiting for parse-image API endpoint"
+      refs: ["src/app/api/parse-image/route.ts"]
+    - action: "Consider adding file content validation (not just extension) for additional security"
+      refs: ["src/components/problem-input/ImageProblemInput.tsx:29-44"]

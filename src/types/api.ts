@@ -1,0 +1,61 @@
+/**
+ * API request/response types for AI Math Tutor
+ * These types define the contract between frontend and backend
+ */
+
+import type { ConversationMessage } from "./models";
+
+/**
+ * Chat API Request
+ */
+export interface ChatRequest {
+  sessionId: string;
+  message: string;
+  conversationHistory: ConversationMessage[];
+  canvasSnapshot?: string; // base64 image (optional for this story)
+}
+
+/**
+ * Chat API Response
+ */
+export interface ChatResponse {
+  message: ConversationMessage;
+  annotationActions?: AnnotationAction[]; // Optional (for future stories)
+}
+
+/**
+ * Annotation Action (from LLM function calling)
+ */
+export interface AnnotationAction {
+  action: "highlight" | "circle";
+  target: string; // Natural language description (e.g., "numerator", "left side")
+}
+
+/**
+ * Parse Image API Request
+ */
+export interface ParseImageRequest {
+  image: string; // base64-encoded image (data:image/png;base64,...)
+}
+
+/**
+ * Parse Image API Response
+ */
+export interface ParseImageResponse {
+  success: boolean;
+  parsedContent: string; // Extracted problem text
+  confidence?: number; // 0-1 scale (optional)
+}
+
+/**
+ * Standard API Error Response
+ */
+export interface ApiError {
+  error: {
+    code: string; // e.g., "INVALID_INPUT", "RATE_LIMIT", "INTERNAL_ERROR"
+    message: string;
+    details?: unknown;
+    timestamp: string; // ISO 8601 timestamp
+    requestId: string; // UUID for correlation
+  };
+}

@@ -14,22 +14,26 @@ AI Math Tutor is a web application that provides interactive math tutoring throu
 ## Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd ai-math-tutor
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Create a `.env.local` file in the root directory:
+
 ```bash
 cp .env.example .env.local
 ```
 
 4. Add your environment variables to `.env.local`:
+
 ```env
 OPENAI_API_KEY=your_openai_api_key_here
 ```
@@ -53,16 +57,19 @@ Create a `.env.local` file in the root directory with the following variables:
 ### Setting Up Environment Variables
 
 1. Copy the example file:
+
 ```bash
 cp .env.example .env.local
 ```
 
 2. Edit `.env.local` and replace placeholder values with your actual API keys:
+
 ```env
 OPENAI_API_KEY=sk-your-actual-api-key-here
 ```
 
 **Important Security Notes:**
+
 - `.env.local` is gitignored and will **never** be committed to the repository
 - Never commit API keys or secrets to the repository
 - Use `.env.example` as a template for required environment variables
@@ -136,12 +143,15 @@ regex = '''your-regex-pattern'''
 ### Troubleshooting
 
 **Issue:** Hook not running
+
 - Solution: Run `npm install` to ensure Husky is set up (prepare script runs automatically)
 
 **Issue:** False positives
+
 - Solution: Add patterns to `gitleaks.toml` allowlist in the `[[allowlists]]` section
 
 **Issue:** Gitleaks not found
+
 - Solution: Install Gitleaks via Homebrew: `brew install gitleaks`
   - Or download from: https://github.com/gitleaks/gitleaks/releases
 
@@ -155,4 +165,3 @@ regex = '''your-regex-pattern'''
 ## License
 
 MIT
-
