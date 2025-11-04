@@ -10,6 +10,8 @@ import {
   OCR_PARSING_PROMPT_V1,
   PRACTICE_PROBLEM_GENERATION_PROMPT_V1,
 } from "./prompts";
+import { annotationResolver } from "./annotationResolver";
+import type { TutorAnnotation } from "@/types/canvas";
 
 /**
  * LLM Service class for handling OpenAI API calls
@@ -141,14 +143,14 @@ class LLMService {
    * Process a message and return tutor response
    * @param conversationHistory - Array of previous messages for context
    * @param message - Current student message
-   * @param canvasSnapshot - Optional base64 image of canvas (for future stories)
-   * @returns Tutor response as ConversationMessage
+   * @param canvasSnapshot - Optional base64 image of canvas
+   * @returns Tutor response as ConversationMessage with optional annotations
    */
   async processMessage(
     conversationHistory: ConversationMessage[],
     message: string,
     canvasSnapshot?: string
-  ): Promise<ConversationMessage> {
+  ): Promise<{ message: ConversationMessage; annotations?: TutorAnnotation[] }> {
     // Format conversation history for OpenAI API
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       {
@@ -202,12 +204,38 @@ class LLMService {
       });
     }
 
-    // Prepare API request
+    // Define annotation function for function calling (Story 3.4)
+    const annotateCanvasFunction: OpenAI.Chat.Completions.ChatCompletionCreateParams.Function =
+      {
+        name: "annotate_canvas",
+        description:
+          "Highlight or circle a specific part of the problem to guide student attention visually",
+        parameters: {
+          type: "object",
+          properties: {
+            action: {
+              type: "string",
+              enum: ["highlight", "circle"],
+              description: "Type of annotation to add to the canvas",
+            },
+            target: {
+              type: "string",
+              description:
+                "Natural language description of what to annotate (e.g., 'numerator', 'left side', 'first term', 'equals sign')",
+            },
+          },
+          required: ["action", "target"],
+        },
+      };
+
+    // Prepare API request with function calling
     const requestOptions: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
       model: useVision ? "gpt-4-vision-preview" : "gpt-4-turbo",
       messages,
       temperature: 0.7,
       max_tokens: 500,
+      functions: [annotateCanvasFunction],
+      function_call: "auto", // Let GPT-4 decide when to use function
     };
 
     // Call OpenAI API with error handling and fallback
@@ -251,19 +279,71 @@ class LLMService {
     // Extract response
     const assistantMessage = completion.choices[0]?.message;
 
-    if (!assistantMessage || !assistantMessage.content) {
+    if (!assistantMessage) {
       throw new Error("No response from OpenAI API");
+    }
+
+    // Handle function call if present (Story 3.4)
+    let annotations: TutorAnnotation[] | undefined;
+    if (assistantMessage.function_call) {
+      try {
+        const functionCall = assistantMessage.function_call;
+        if (functionCall.name === "annotate_canvas" && functionCall.arguments) {
+          // Parse function arguments
+          const args = JSON.parse(functionCall.arguments);
+          const action = args.action as "highlight" | "circle";
+          const target = args.target as string;
+
+          // Resolve target to bounding box using annotation resolver
+          const bounds = annotationResolver.resolve(target);
+
+          if (bounds) {
+            // Create annotation
+            const annotation: TutorAnnotation = {
+              id: `annotation_${Date.now()}_${Math.random()
+                .toString(36)
+                .substring(2, 9)}`,
+              type: action,
+              target,
+              bounds,
+              timestamp: Date.now(),
+            };
+            annotations = [annotation];
+            console.log(
+              `[LLM Service] Created annotation: ${action} on "${target}"`
+            );
+          } else {
+            // Tier 3: Silent failure - log but continue
+            console.log(
+              `[LLM Service] Failed to resolve annotation target: "${target}"`
+            );
+          }
+        }
+      } catch (error) {
+        console.error(
+          "[LLM Service] Error processing function call:",
+          error
+        );
+        // Silent failure - continue with message response
+      }
+    }
+
+    // Get content from response (may be null if only function call)
+    const content = assistantMessage.content || "";
+
+    if (!content && !annotations) {
+      throw new Error("No valid response (content or annotations) from OpenAI API");
     }
 
     // Create ConversationMessage from response
     const tutorMessage: ConversationMessage = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       role: "tutor",
-      content: assistantMessage.content,
+      content,
       timestamp: new Date(),
     };
 
-    return tutorMessage;
+    return { message: tutorMessage, annotations };
   }
 }
 

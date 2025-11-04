@@ -4,6 +4,7 @@
  */
 
 import type { ConversationMessage, MathProblem } from "./models";
+import type { TutorAnnotation } from "./canvas";
 
 /**
  * Chat API Request
@@ -20,15 +21,7 @@ export interface ChatRequest {
  */
 export interface ChatResponse {
   message: ConversationMessage;
-  annotationActions?: AnnotationAction[]; // Optional (for future stories)
-}
-
-/**
- * Annotation Action (from LLM function calling)
- */
-export interface AnnotationAction {
-  action: "highlight" | "circle";
-  target: string; // Natural language description (e.g., "numerator", "left side")
+  annotations?: TutorAnnotation[]; // Story 3.4: Tutor annotations with resolved coordinates
 }
 
 /**

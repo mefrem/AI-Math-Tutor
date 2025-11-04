@@ -1,12 +1,14 @@
 /**
  * Custom hook for sending messages
  * Handles API calls and state management
+ * Story 3.4: Enhanced to handle tutor annotations
  */
 
 'use client';
 
 import { useCallback } from 'react';
 import { useTutoringStore } from '@/stores/useTutoringStore';
+import { useCanvasStore } from '@/stores/useCanvasStore';
 import { sendMessage as sendMessageApi } from '@/services/api/chatApi';
 import type { ConversationMessage } from '@/types/models';
 
@@ -40,6 +42,7 @@ export function useSendMessage() {
   const addMessage = useTutoringStore((state) => state.addMessage);
   const setLoading = useTutoringStore((state) => state.setLoading);
   const setSessionId = useTutoringStore((state) => state.setSessionId);
+  const addTutorAnnotation = useCanvasStore((state) => state.addTutorAnnotation);
 
   const sendMessage = useCallback(
     async (message: string) => {
@@ -66,6 +69,16 @@ export function useSendMessage() {
 
         // Add tutor response to conversation history
         addMessage(response.message);
+
+        // Story 3.4: Add tutor annotations to canvas if present
+        if (response.annotations && response.annotations.length > 0) {
+          response.annotations.forEach((annotation) => {
+            addTutorAnnotation(annotation);
+          });
+          console.log(
+            `[useSendMessage] Added ${response.annotations.length} annotation(s) to canvas`
+          );
+        }
       } catch (error) {
         // Handle error - could add error message to chat
         console.error('Failed to send message:', error);
@@ -76,7 +89,7 @@ export function useSendMessage() {
         setLoading(false);
       }
     },
-    [messages, sessionId, addMessage, setLoading, setSessionId]
+    [messages, sessionId, addMessage, setLoading, setSessionId, addTutorAnnotation]
   );
 
   return { sendMessage, isLoading };

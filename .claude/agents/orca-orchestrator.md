@@ -71,6 +71,7 @@ Provide major milestone updates to the human user:
 - After bug resolution cycle: "Story [N] bugs resolved, re-validating"
 - After completing an epic: "Epic [name] complete: [N] stories delivered"
 - When all development is complete: "All epics and stories completed. Development cycle finished."
+- Provide some indication as to which subagent is currently working. User should always know at a glance who is working.
 
 Keep updates concise but informative. Focus on major phase transitions and outcomes, not granular details.
 

@@ -25,10 +25,33 @@ export interface Line {
 export type DrawingTool = "pen" | "eraser";
 
 /**
+ * Tutor annotation on canvas
+ * For Story 3.4: Tutor Highlighting and Circling Capability
+ */
+export interface TutorAnnotation {
+  /** Unique identifier for the annotation */
+  id: string;
+  /** Type of annotation */
+  type: "highlight" | "circle";
+  /** Original target description from LLM */
+  target: string;
+  /** Bounding box for the annotation */
+  bounds: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  /** Timestamp when the annotation was created */
+  timestamp: number;
+}
+
+/**
  * Canvas drawing state
  */
 export interface CanvasState {
   lines: Line[];
   isDrawing: boolean;
   currentTool: DrawingTool;
+  tutorAnnotations: TutorAnnotation[];
 }

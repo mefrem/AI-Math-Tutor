@@ -13,7 +13,15 @@ import {
   useImperativeHandle,
   forwardRef,
 } from "react";
-import { Stage, Layer, Text, Image as KonvaImage, Line } from "react-konva";
+import {
+  Stage,
+  Layer,
+  Text,
+  Image as KonvaImage,
+  Line,
+  Rect,
+  Ellipse,
+} from "react-konva";
 import type Konva from "konva";
 import type { MathProblem } from "@/types/models";
 import { renderProblem } from "@/services/canvas/problemRenderer";
@@ -67,9 +75,15 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
     );
     const [isRendering, setIsRendering] = useState(false);
 
-    // Canvas store for drawing state
-    const { lines, isDrawing, addLine, setIsDrawing, clearAllLines } =
-      useCanvasStore();
+    // Canvas store for drawing state and annotations
+    const {
+      lines,
+      isDrawing,
+      addLine,
+      setIsDrawing,
+      clearAllLines,
+      tutorAnnotations,
+    } = useCanvasStore();
 
     // Local state for current drawing line
     const [currentLine, setCurrentLine] = useState<number[]>([]);
@@ -400,6 +414,42 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
                 fill="#999999"
               />
             )}
+          </Layer>
+
+          {/* Annotation layer for tutor highlights/circles (Story 3.4) */}
+          <Layer>
+            {tutorAnnotations.map((annotation) => {
+              const { bounds, type, id } = annotation;
+              if (type === "highlight") {
+                // Semi-transparent orange rectangle
+                return (
+                  <Rect
+                    key={id}
+                    x={bounds.x}
+                    y={bounds.y}
+                    width={bounds.width}
+                    height={bounds.height}
+                    fill="#FF9800"
+                    opacity={0.3}
+                  />
+                );
+              } else if (type === "circle") {
+                // Orange ellipse/circle stroke
+                return (
+                  <Ellipse
+                    key={id}
+                    x={bounds.x + bounds.width / 2}
+                    y={bounds.y + bounds.height / 2}
+                    radiusX={bounds.width / 2}
+                    radiusY={bounds.height / 2}
+                    stroke="#FF9800"
+                    strokeWidth={3}
+                    fill="transparent"
+                  />
+                );
+              }
+              return null;
+            })}
           </Layer>
 
           {/* Drawing layer for student work */}

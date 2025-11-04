@@ -59,17 +59,17 @@ export async function POST(request: NextRequest) {
 
     const chatRequest = body as ChatRequest;
 
-    // 2. Call service layer
-    const tutorMessage = await llmService.processMessage(
+    // 2. Call service layer (Story 3.4: returns message + annotations)
+    const result = await llmService.processMessage(
       chatRequest.conversationHistory,
       chatRequest.message,
       chatRequest.canvasSnapshot
     );
 
-    // 3. Return response
+    // 3. Return response with annotations if present
     const response: ChatResponse = {
-      message: tutorMessage,
-      // annotationActions will be added in future stories
+      message: result.message,
+      annotations: result.annotations, // Story 3.4: tutor annotations
     };
 
     return NextResponse.json(response);
