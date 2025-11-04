@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run Gitleaks on staged files
+gitleaks protect --no-banner --staged --config gitleaks.toml

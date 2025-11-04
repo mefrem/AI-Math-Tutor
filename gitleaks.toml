@@ -1,0 +1,35 @@
+# Gitleaks configuration for AI Math Tutor
+# This configuration extends the default Gitleaks rules and adds custom exclusions
+
+title = "AI Math Tutor Gitleaks Configuration"
+
+# Extend default Gitleaks configuration
+[extend]
+useDefault = true
+
+# Disable rules that may cause false positives for this project
+disabledRules = []
+
+# Global allowlist for files/paths that should not be scanned
+[[allowlists]]
+description = "Allow example files and templates"
+paths = [
+  '''\.env\.example''',
+  '''\.env\.template''',
+  '''gitleaks\.toml''',
+  '''README\.md''',
+  '''docs/.*''',
+]
+
+# Allow common test patterns
+[[allowlists]]
+description = "Allow test files with mock data"
+stopwords = [
+  '''test123''',
+  '''mock.*key''',
+  '''example.*secret''',
+  '''sk-test''',
+  '''your_api_key_here''',
+  '''your_openai_api_key_here''',
+]
+

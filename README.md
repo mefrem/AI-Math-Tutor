@@ -50,6 +50,24 @@ Create a `.env.local` file in the root directory with the following variables:
 
 - `OPENAI_API_KEY`: Your OpenAI API key (required for AI features)
 
+### Setting Up Environment Variables
+
+1. Copy the example file:
+```bash
+cp .env.example .env.local
+```
+
+2. Edit `.env.local` and replace placeholder values with your actual API keys:
+```env
+OPENAI_API_KEY=sk-your-actual-api-key-here
+```
+
+**Important Security Notes:**
+- `.env.local` is gitignored and will **never** be committed to the repository
+- Never commit API keys or secrets to the repository
+- Use `.env.example` as a template for required environment variables
+- The pre-commit hook (Gitleaks) will block commits containing secrets
+
 ## Project Structure
 
 ```
@@ -77,6 +95,55 @@ ai-math-tutor/
 - **Canvas Library**: Konva.js 9.3+
 - **Math Rendering**: KaTeX 0.16+
 - **LLM**: OpenAI GPT-4
+
+## Security & Secret Scanning
+
+This project uses **Gitleaks** to prevent accidental commits of API keys and secrets.
+
+### How It Works
+
+- **Gitleaks** scans staged files before each commit
+- If secrets are detected, the commit is blocked
+- The pre-commit hook runs automatically via **Husky**
+
+### Configuration
+
+- Gitleaks configuration: `gitleaks.toml`
+- Pre-commit hook: `.husky/pre-commit`
+- Husky manages git hooks automatically
+
+### Bypassing the Hook (Emergency Only)
+
+If you need to bypass the hook for an emergency (not recommended):
+
+```bash
+git commit --no-verify -m "your message"
+```
+
+**Warning:** Only bypass the hook in genuine emergencies. Never commit secrets, even with `--no-verify`.
+
+### Adding Custom Patterns
+
+To add custom secret patterns, edit `gitleaks.toml`:
+
+```toml
+[[rules]]
+id = "custom-pattern"
+description = "Custom secret pattern"
+regex = '''your-regex-pattern'''
+```
+
+### Troubleshooting
+
+**Issue:** Hook not running
+- Solution: Run `npm install` to ensure Husky is set up (prepare script runs automatically)
+
+**Issue:** False positives
+- Solution: Add patterns to `gitleaks.toml` allowlist in the `[[allowlists]]` section
+
+**Issue:** Gitleaks not found
+- Solution: Install Gitleaks via Homebrew: `brew install gitleaks`
+  - Or download from: https://github.com/gitleaks/gitleaks/releases
 
 ## Available Scripts
 
