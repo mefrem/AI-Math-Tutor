@@ -32,6 +32,7 @@ interface WhiteboardProps {
 export interface WhiteboardRef {
   clearCanvas: () => void;
   clearDrawings: () => void;
+  captureSnapshot: () => Promise<string>;
 }
 
 /**
@@ -250,6 +251,48 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
     };
 
     /**
+     * Capture canvas as base64-encoded image snapshot
+     * Story 3.2: Canvas State Serialization
+     * Includes problem rendering + student drawings + future tutor annotations
+     * Returns data URL (PNG or JPEG if size > 1MB)
+     */
+    const captureSnapshot = async (): Promise<string> => {
+      if (!stageRef.current) {
+        throw new Error("Canvas stage not initialized");
+      }
+
+      try {
+        // Capture as PNG first (best quality, preserves colors)
+        const pngDataUrl = stageRef.current.toDataURL({
+          pixelRatio: 1, // 1:1 pixel ratio for optimal file size
+          mimeType: "image/png",
+        });
+
+        // Check file size (base64 string length * 0.75 ≈ bytes)
+        const estimatedSizeBytes = (pngDataUrl.length * 0.75);
+        const maxSizeBytes = 1 * 1024 * 1024; // 1MB
+
+        // If PNG is too large, convert to JPEG with compression
+        if (estimatedSizeBytes > maxSizeBytes) {
+          console.log(
+            `PNG snapshot size (${(estimatedSizeBytes / 1024).toFixed(1)}KB) exceeds 1MB, converting to JPEG`
+          );
+          const jpegDataUrl = stageRef.current.toDataURL({
+            pixelRatio: 1,
+            mimeType: "image/jpeg",
+            quality: 0.8, // 80% quality for good balance
+          });
+          return jpegDataUrl;
+        }
+
+        return pngDataUrl;
+      } catch (error) {
+        console.error("Error capturing canvas snapshot:", error);
+        throw new Error("Failed to capture canvas snapshot");
+      }
+    };
+
+    /**
      * Clear canvas
      */
     const clearCanvas = () => {
@@ -273,10 +316,11 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
       }
     };
 
-    // Expose clearCanvas and clearDrawings methods via ref
+    // Expose methods via ref
     useImperativeHandle(ref, () => ({
       clearCanvas,
       clearDrawings,
+      captureSnapshot,
     }));
 
     return (
