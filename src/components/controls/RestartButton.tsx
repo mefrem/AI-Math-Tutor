@@ -13,19 +13,32 @@ import { useCanvasStore } from "@/stores/useCanvasStore";
 export function RestartButton() {
   const [showConfirm, setShowConfirm] = useState(false);
   const resetSession = useTutoringStore((state) => state.resetSession);
+  const currentProblem = useTutoringStore((state) => state.currentProblem);
+  const setCurrentProblem = useTutoringStore((state) => state.setCurrentProblem);
   const clearAllLines = useCanvasStore((state) => state.clearAllLines);
   const clearAllAnnotations = useCanvasStore(
     (state) => state.clearAllAnnotations
   );
 
   const handleRestart = () => {
+    // Preserve the current problem before resetting session
+    const problemToRestore = currentProblem;
+
     // Clear canvas state
     clearAllLines();
     clearAllAnnotations();
 
-    // Reset conversation (but keep problem)
-    // Note: We clear messages but the problem will be kept by the problem display logic
+    // Reset conversation (clears messages and session, including currentProblem)
     resetSession();
+
+    // Restore the problem after reset (use setTimeout to ensure React processes the reset first)
+    if (problemToRestore) {
+      // Use setTimeout to ensure React processes the resetSession update first
+      // This ensures the Whiteboard clears and then re-renders with the problem
+      setTimeout(() => {
+        setCurrentProblem(problemToRestore);
+      }, 0);
+    }
 
     // Close modal
     setShowConfirm(false);

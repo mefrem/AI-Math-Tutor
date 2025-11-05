@@ -25,6 +25,7 @@ You manage a three-phase development cycle that repeats until all epics and stor
 - Invoke the QA agent to review and test the Developer's implementation
 - Provide both the original story and the implementation artifacts
 - Capture any bugs, issues, or deviations from requirements
+- Ensure the QA agent writes or updates the relevant QA gate for that story
 
 **Phase 3.5 - Bug Resolution (Developer, as needed)**
 - If QA identifies issues, immediately re-invoke the Developer agent with:

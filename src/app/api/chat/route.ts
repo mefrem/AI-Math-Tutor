@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { llmService } from '@/services/llmService';
+import { generateTTS, bufferToDataURL } from '@/services/ttsService';
 import { handleApiError } from '@/lib/errorHandler';
 import type { ChatRequest, ChatResponse, ApiError } from '@/types/api';
 
@@ -59,17 +60,44 @@ export async function POST(request: NextRequest) {
 
     const chatRequest = body as ChatRequest;
 
+    // Log canvas snapshot and semantic elements reception (server-side)
+    console.log('[API Route] Received request:', {
+      hasSnapshot: !!chatRequest.canvasSnapshot,
+      snapshotLength: chatRequest.canvasSnapshot?.length,
+      snapshotPreview: chatRequest.canvasSnapshot?.substring(0, 50),
+      semanticElementsCount: chatRequest.semanticElements?.length || 0,
+      semanticElementIds: chatRequest.semanticElements?.map(e => e.id) || [],
+    });
+
     // 2. Call service layer (Story 3.4: returns message + annotations)
     const result = await llmService.processMessage(
       chatRequest.conversationHistory,
       chatRequest.message,
-      chatRequest.canvasSnapshot
+      chatRequest.canvasSnapshot,
+      chatRequest.currentProblem, // Pass problem context to LLM
+      chatRequest.semanticElements // Pass client-side semantic elements for annotation resolution
     );
 
-    // 3. Return response with annotations if present
+    // 3. Generate TTS audio immediately after getting LLM response
+    // This eliminates one client-server round-trip
+    let audioDataURL: string | undefined;
+    try {
+      if (result.message.content && result.message.role === 'tutor') {
+        const audioBuffer = await generateTTS(result.message.content);
+        audioDataURL = bufferToDataURL(audioBuffer);
+        console.log('[API Route] TTS audio generated successfully');
+      }
+    } catch (ttsError) {
+      // Graceful degradation: If TTS fails, still return text response
+      console.error('[API Route] TTS generation failed, continuing without audio:', ttsError);
+      // Don't throw - continue with text-only response
+    }
+
+    // 4. Return response with annotations and audio if present
     const response: ChatResponse = {
       message: result.message,
       annotations: result.annotations, // Story 3.4: tutor annotations
+      audio: audioDataURL, // Server-side generated TTS audio
     };
 
     return NextResponse.json(response);

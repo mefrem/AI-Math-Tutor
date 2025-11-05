@@ -13,6 +13,7 @@ interface TextProblemInputProps {
   onBack: () => void;
   onSwitchToImage?: () => void;
   isLoading?: boolean;
+  hideBackButton?: boolean; // Hide back button in unified view
 }
 
 /**
@@ -38,6 +39,7 @@ export function TextProblemInput({
   onBack,
   onSwitchToImage,
   isLoading = false,
+  hideBackButton = false,
 }: TextProblemInputProps) {
   const [problemText, setProblemText] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -72,25 +74,7 @@ export function TextProblemInput({
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto">
-      {/* Toggle between text and image input */}
-      {onSwitchToImage && (
-        <div className="mb-6 flex gap-2 justify-center">
-          <button
-            type="button"
-            disabled
-            className="px-4 py-2 text-sm text-white bg-blue-500 border border-blue-500 rounded-lg cursor-default"
-          >
-            Type Problem
-          </button>
-          <button
-            type="button"
-            onClick={onSwitchToImage}
-            className="px-4 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
-          >
-            Upload Image
-          </button>
-        </div>
-      )}
+      {/* Toggle between text and image input - hidden in unified mode */}
 
       <div className="mb-6">
         <label
@@ -119,14 +103,17 @@ export function TextProblemInput({
       </div>
 
       <div className="flex gap-4 justify-end">
-        <button
-          type="button"
-          onClick={onBack}
-          disabled={isLoading}
-          className="px-6 py-3 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          Back to Landing Page
-        </button>
+        {/* Hide Back button in unified view */}
+        {!hideBackButton && (
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={isLoading}
+            className="px-6 py-3 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Back
+          </button>
+        )}
         <button
           type="submit"
           disabled={isLoading || !problemText.trim()}

@@ -29,6 +29,7 @@ import { semanticRegistry } from "@/services/canvas/semanticRegistry";
 import type { RenderedElement } from "@/services/canvas/problemRenderer";
 import { useCanvasStore } from "@/stores/useCanvasStore";
 import type { Line as LineType } from "@/types/canvas";
+import { CanvasFPSMonitor } from "@/utils/performance";
 
 interface WhiteboardProps {
   width?: number;
@@ -41,6 +42,7 @@ export interface WhiteboardRef {
   clearCanvas: () => void;
   clearDrawings: () => void;
   captureSnapshot: () => Promise<string>;
+  getSemanticElements: () => Promise<Array<{ id: string; bounds: { x: number; y: number; width: number; height: number } }>>;
 }
 
 /**
@@ -87,6 +89,33 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
 
     // Local state for current drawing line
     const [currentLine, setCurrentLine] = useState<number[]>([]);
+
+    // Story 5.2: Canvas FPS monitoring
+    const fpsMonitorRef = useRef<CanvasFPSMonitor | null>(null);
+
+    /**
+     * Initialize and monitor canvas FPS
+     * Story 5.2: Performance measurement
+     */
+    useEffect(() => {
+      // Start FPS monitoring
+      const monitor = new CanvasFPSMonitor();
+      fpsMonitorRef.current = monitor;
+
+      // Monitor FPS (only log in development)
+      monitor.start((fps) => {
+        // Store FPS in performance monitor for reporting
+        if (process.env.NODE_ENV === 'development') {
+          // FPS logging disabled per user request
+          // console.log(`[Performance] Canvas FPS: ${fps}`);
+        }
+      });
+
+      return () => {
+        // Stop FPS monitoring on unmount
+        monitor.stop();
+      };
+    }, []);
 
     /**
      * Handle window resize and container sizing
@@ -140,21 +169,70 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
       setIsRendering(true);
       (async () => {
         try {
-          const elements = await renderProblem(problem, 20, 40, 24);
+          // Position problem with padding, allowing text to wrap
+          const startX = 20; // Left padding
+          const startY = 40; // Top padding
+          // Pass canvas width for text wrapping (no centering for simpler annotation tracking)
+          const elements = await renderProblem(problem, startX, startY, 24, canvasSize.width, false);
           setRenderedElements(elements);
 
           // Register semantic elements
           semanticRegistry.clear();
+          // Also import and register with annotationResolver
+          const { annotationResolver } = await import("@/services/annotationResolver");
+          annotationResolver.clearElements();
+          
+          // Register all elements with semantic IDs
           for (const element of elements) {
             if (element.semanticId) {
+              // Register in semanticRegistry (for display/tracking)
               semanticRegistry.register(
                 element.semanticId,
                 element.position,
                 element.size,
                 element.semanticId.replace(/_/g, " ")
               );
+              // Also register in annotationResolver (for annotation resolution)
+              // Use exact bounds from rendered element
+              const bounds = {
+                x: element.position.x,
+                y: element.position.y,
+                width: element.size.width,
+                height: element.size.height,
+              };
+              
+              annotationResolver.registerElement(
+                element.semanticId,
+                bounds
+              );
+              
+              // Register with normalized ID (without underscores) for better matching
+              const normalizedId = element.semanticId.replace(/_/g, " ");
+              annotationResolver.registerElement(
+                normalizedId,
+                bounds // Use same bounds for normalized ID
+              );
+              
+              // Debug: Log registration for specific elements
+              if ((element.semanticId.includes('number_5') || element.semanticId === 'number 5') ||
+                  (element.semanticId.includes('number_2') || element.semanticId === 'number 2') ||
+                  (element.semanticId.includes('variable_x') || element.semanticId === 'variable x')) {
+                console.log(`[Whiteboard] Registered "${element.content}" element:`, {
+                  semanticId: element.semanticId,
+                  bounds,
+                  content: element.content,
+                  position: element.position,
+                  size: element.size,
+                });
+              }
             }
           }
+          
+          // Update annotationResolver canvas dimensions
+          annotationResolver.updateCanvasDimensions(canvasSize.width, canvasSize.height);
+          
+          // Update problem bounds after all elements are registered
+          annotationResolver.updateProblemBounds();
 
           // Preload images
           const newCache = new Map<string, HTMLImageElement>();
@@ -183,24 +261,53 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
           setImageCache(newCache);
         } catch (error: unknown) {
           console.error("Error rendering problem:", error);
-          // Fallback to plain text
-          setRenderedElements([
-            {
-              type: "text",
-              content: problem.parsedContent || problem.rawContent,
-              position: { x: 20, y: 40 },
+          // Fallback to plain text with wrapping and centering
+          const startX = 20;
+          const startY = 40;
+          const fallbackText = problem.parsedContent || problem.rawContent;
+          const maxTextWidth = canvasSize.width - 40; // Padding on both sides
+          const fontSize = 24;
+          
+          // Simple word wrapping for fallback
+          const words = fallbackText.split(/\s+/);
+          const lines: string[] = [];
+          let currentLine = "";
+          
+          for (const word of words) {
+            const testLine = currentLine ? `${currentLine} ${word}` : word;
+            const testWidth = testLine.length * fontSize * 0.6;
+            
+            if (testWidth <= maxTextWidth || currentLine === "") {
+              currentLine = testLine;
+            } else {
+              if (currentLine) lines.push(currentLine);
+              currentLine = word;
+            }
+          }
+          if (currentLine) lines.push(currentLine);
+          
+          const lineHeight = fontSize * 1.5;
+          const fallbackElements = lines.map((line, index) => {
+            const lineWidth = line.length * fontSize * 0.6;
+            // Center each line
+            const xPosition = (canvasSize.width - lineWidth) / 2;
+            return {
+              type: "text" as const,
+              content: line,
+              position: { x: xPosition, y: startY + index * lineHeight },
               size: {
-                width:
-                  (problem.parsedContent || problem.rawContent).length * 14,
-                height: 24,
+                width: lineWidth,
+                height: fontSize,
               },
-            },
-          ]);
+            };
+          });
+          
+          setRenderedElements(fallbackElements);
         } finally {
           setIsRendering(false);
         }
       })();
-    }, [problem]);
+    }, [problem, canvasSize]); // Re-render when canvas size changes
 
     /**
      * Handle mouse/touch down - start drawing
@@ -335,6 +442,20 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
       clearCanvas,
       clearDrawings,
       captureSnapshot,
+      getSemanticElements: async () => {
+        // Import annotationResolver dynamically to get client-side elements
+        const { annotationResolver } = await import("@/services/annotationResolver");
+        const allElements = annotationResolver.getAllSemanticElements();
+        const elements: Array<{ id: string; bounds: { x: number; y: number; width: number; height: number } }> = [];
+        for (const [id, element] of allElements) {
+          elements.push({
+            id,
+            bounds: element.bounds,
+          });
+        }
+        console.log(`[Whiteboard] getSemanticElements: returning ${elements.length} elements`);
+        return elements;
+      },
     }));
 
     return (
@@ -358,38 +479,42 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
         >
           {/* Problem rendering layer */}
           <Layer ref={layerRef}>
-            {/* Render problem elements */}
-            {renderedElements.map((element, index) => {
-              if (element.type === "text") {
-                return (
-                  <Text
-                    key={`text-${index}`}
-                    x={element.position.x}
-                    y={element.position.y}
-                    text={element.content}
-                    fontSize={24}
-                    fontFamily="Arial, sans-serif"
-                    fill="#333333"
-                  />
-                );
-              } else if (element.type === "image") {
-                const img = imageCache.get(element.content);
-                if (img) {
+            {/* Render problem elements (skip annotation-only elements) */}
+            {renderedElements
+              .filter((element) => !element.annotationOnly)
+              .map((element, index) => {
+                if (element.type === "text") {
                   return (
-                    <KonvaImage
-                      key={`image-${index}`}
+                    <Text
+                      key={`text-${index}`}
                       x={element.position.x}
                       y={element.position.y}
-                      image={img}
+                      text={element.content}
+                      fontSize={24}
+                      fontFamily="Arial, sans-serif"
+                      fill="#333333"
                       width={element.size.width}
-                      height={element.size.height}
+                      wrap="word"
                     />
                   );
+                } else if (element.type === "image") {
+                  const img = imageCache.get(element.content);
+                  if (img) {
+                    return (
+                      <KonvaImage
+                        key={`image-${index}`}
+                        x={element.position.x}
+                        y={element.position.y}
+                        image={img}
+                        width={element.size.width}
+                        height={element.size.height}
+                      />
+                    );
+                  }
+                  return null;
                 }
                 return null;
-              }
-              return null;
-            })}
+              })}
 
             {/* Loading indicator */}
             {isRendering && (
@@ -419,7 +544,14 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
           {/* Annotation layer for tutor highlights/circles (Story 3.4) */}
           <Layer>
             {tutorAnnotations.map((annotation) => {
-              const { bounds, type, id } = annotation;
+              const { bounds, type, id, target } = annotation;
+              
+              // Validate bounds
+              if (!bounds || bounds.width <= 0 || bounds.height <= 0) {
+                console.warn(`[Whiteboard] Invalid annotation bounds for "${target}":`, bounds);
+                return null;
+              }
+              
               if (type === "highlight") {
                 // Semi-transparent orange rectangle
                 return (
@@ -440,8 +572,8 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
                     key={id}
                     x={bounds.x + bounds.width / 2}
                     y={bounds.y + bounds.height / 2}
-                    radiusX={bounds.width / 2}
-                    radiusY={bounds.height / 2}
+                    radiusX={Math.max(bounds.width / 2, 5)}
+                    radiusY={Math.max(bounds.height / 2, 5)}
                     stroke="#FF9800"
                     strokeWidth={3}
                     fill="transparent"

@@ -56,3 +56,4 @@ recommendations:
   future: # Can be addressed later
     - action: "Consider code splitting for workspace page if bundle size becomes an issue"
       refs: ["src/app/workspace/page.tsx"]
+

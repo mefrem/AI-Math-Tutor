@@ -39,13 +39,18 @@ export function useSendMessage() {
   const messages = useTutoringStore((state) => state.messages);
   const isLoading = useTutoringStore((state) => state.isLoading);
   const sessionId = useTutoringStore((state) => state.sessionId);
+  const currentProblem = useTutoringStore((state) => state.currentProblem);
   const addMessage = useTutoringStore((state) => state.addMessage);
   const setLoading = useTutoringStore((state) => state.setLoading);
   const setSessionId = useTutoringStore((state) => state.setSessionId);
   const addTutorAnnotation = useCanvasStore((state) => state.addTutorAnnotation);
 
   const sendMessage = useCallback(
-    async (message: string) => {
+    async (
+      message: string,
+      canvasSnapshot?: string,
+      semanticElements?: Array<{ id: string; bounds: { x: number; y: number; width: number; height: number } }>
+    ) => {
       // Generate session ID if not exists
       const currentSessionId = sessionId || generateSessionId();
       if (!sessionId) {
@@ -60,15 +65,28 @@ export function useSendMessage() {
       setLoading(true);
 
       try {
-        // Call API with conversation history
+        // Call API with conversation history, canvas snapshot, semantic elements, and problem context
         const response = await sendMessageApi(
           message,
           messages,
-          currentSessionId
+          currentSessionId,
+          canvasSnapshot, // Canvas snapshot from whiteboard
+          currentProblem || undefined,
+          semanticElements // Client-side registered semantic elements
         );
 
+        // Add server-generated audio to message metadata if present
+        const tutorMessage: ConversationMessage = {
+          ...response.message,
+          metadata: {
+            ...response.message.metadata,
+            // If server generated audio, store it in metadata
+            ...(response.audio && { audioUrl: response.audio }),
+          },
+        };
+
         // Add tutor response to conversation history
-        addMessage(response.message);
+        addMessage(tutorMessage);
 
         // Story 3.4: Add tutor annotations to canvas if present
         if (response.annotations && response.annotations.length > 0) {
@@ -80,16 +98,33 @@ export function useSendMessage() {
           );
         }
       } catch (error) {
-        // Handle error - could add error message to chat
+        // Story 5.3: Display user-friendly error message
         console.error('Failed to send message:', error);
-        // For now, we'll just log the error
-        // Future: Add error message display component
+        const setError = useTutoringStore.getState().setError;
+        
+        // Create user-friendly error message
+        let errorMessage = 'Failed to send message. Please try again.';
+        if (error instanceof Error) {
+          // Map common error messages to user-friendly text
+          if (error.message.includes('rate limit') || error.message.includes('RATE_LIMIT')) {
+            errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+          } else if (error.message.includes('network') || error.message.includes('fetch')) {
+            errorMessage = 'Network error. Please check your connection and try again.';
+          } else if (error.message.includes('timeout')) {
+            errorMessage = 'Request timed out. Please try again.';
+          } else if (error.message.includes('API')) {
+            errorMessage = 'Service temporarily unavailable. Please try again in a moment.';
+          } else {
+            errorMessage = error.message || errorMessage;
+          }
+        }
+        setError(errorMessage);
       } finally {
         // Clear loading state
         setLoading(false);
       }
     },
-    [messages, sessionId, addMessage, setLoading, setSessionId, addTutorAnnotation]
+    [messages, sessionId, currentProblem, addMessage, setLoading, setSessionId, addTutorAnnotation]
   );
 
   return { sendMessage, isLoading };

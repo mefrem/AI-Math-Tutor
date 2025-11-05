@@ -12,12 +12,14 @@ interface TutoringStore {
   sessionId: string | null;
   messages: ConversationMessage[];
   isLoading: boolean;
+  error: string | null; // Story 5.3: User-friendly error messages
   selectedProblem: ValidationMathProblem | null; // From Story 1.6 validation problems
   currentProblem: MathProblem | null; // User-submitted problem (Story 2.2+)
 
   // Actions
   addMessage: (message: ConversationMessage) => void;
   setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void; // Story 5.3: Set error message
   resetSession: () => void;
   setSessionId: (sessionId: string) => void;
   setSelectedProblem: (problem: ValidationMathProblem | null) => void;
@@ -28,6 +30,7 @@ export const useTutoringStore = create<TutoringStore>((set) => ({
   sessionId: null,
   messages: [],
   isLoading: false,
+  error: null,
   selectedProblem: null,
   currentProblem: null,
 
@@ -38,11 +41,14 @@ export const useTutoringStore = create<TutoringStore>((set) => ({
 
   setLoading: (loading) => set({ isLoading: loading }),
 
+  setError: (error) => set({ error }), // Story 5.3: Set error message
+
   resetSession: () =>
     set({
       sessionId: null,
       messages: [],
       isLoading: false,
+      error: null,
       selectedProblem: null,
       currentProblem: null,
     }),

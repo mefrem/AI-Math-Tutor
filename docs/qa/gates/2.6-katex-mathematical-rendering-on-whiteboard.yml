@@ -59,3 +59,4 @@ recommendations:
       refs: ["src/services/canvas/problemRenderer.ts"]
     - action: "Consider using Web Workers for KaTeX rendering if performance becomes an issue"
       refs: ["src/services/canvas/problemRenderer.ts:175-213"]
+

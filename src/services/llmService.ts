@@ -11,6 +11,7 @@ import {
   PRACTICE_PROBLEM_GENERATION_PROMPT_V1,
 } from "./prompts";
 import { annotationResolver } from "./annotationResolver";
+import type { AnnotationBounds } from "./annotationResolver";
 import type { TutorAnnotation } from "@/types/canvas";
 
 /**
@@ -60,7 +61,7 @@ class LLMService {
 
     // Call GPT-4 Vision API
     const completion = await this.client.chat.completions.create({
-      model: "gpt-4-vision-preview",
+      model: "gpt-4o",
       messages,
       max_tokens: 500,
     });
@@ -144,12 +145,15 @@ class LLMService {
    * @param conversationHistory - Array of previous messages for context
    * @param message - Current student message
    * @param canvasSnapshot - Optional base64 image of canvas
+   * @param currentProblem - Optional problem context
    * @returns Tutor response as ConversationMessage with optional annotations
    */
   async processMessage(
     conversationHistory: ConversationMessage[],
     message: string,
-    canvasSnapshot?: string
+    canvasSnapshot?: string,
+    currentProblem?: MathProblem,
+    semanticElements?: Array<{ id: string; bounds: { x: number; y: number; width: number; height: number } }>
   ): Promise<{ message: ConversationMessage; annotations?: TutorAnnotation[] }> {
     // Format conversation history for OpenAI API
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
@@ -158,6 +162,14 @@ class LLMService {
         content: SOCRATIC_TUTOR_SYSTEM_PROMPT_V1,
       },
     ];
+
+    // Add problem context if provided (inject as system message after main prompt)
+    if (currentProblem && currentProblem.parsedContent) {
+      messages.push({
+        role: "system",
+        content: `PROBLEM CONTEXT: The student is working on the following problem:\n\n"${currentProblem.parsedContent}"\n\nTopic: ${currentProblem.topic || "General Math"}\n\nRefer to this problem when guiding the student. The student may ask questions about it or draw their work on the whiteboard.`,
+      });
+    }
 
     // Add conversation history (text-only, no vision needed for history)
     for (const msg of conversationHistory) {
@@ -178,6 +190,13 @@ class LLMService {
       canvasSnapshot &&
       canvasSnapshot.length > 100 && // More than just data URI prefix
       canvasSnapshot.startsWith("data:image/");
+
+    console.log("[LLM Service] Canvas snapshot check:", {
+      hasSnapshot: !!canvasSnapshot,
+      length: canvasSnapshot?.length,
+      startsWithData: canvasSnapshot?.startsWith("data:image/"),
+      useVision,
+    });
 
     // Add current student message
     // If canvas snapshot provided, use multi-part content (text + image)
@@ -229,14 +248,23 @@ class LLMService {
       };
 
     // Prepare API request with function calling
+    // Use gpt-4o for vision (supports vision + function calling)
+    // Use gpt-4-turbo for text-only
     const requestOptions: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
-      model: useVision ? "gpt-4-vision-preview" : "gpt-4-turbo",
+      model: useVision ? "gpt-4o" : "gpt-4-turbo",
       messages,
       temperature: 0.7,
       max_tokens: 500,
       functions: [annotateCanvasFunction],
       function_call: "auto", // Let GPT-4 decide when to use function
     };
+
+    console.log("[LLM Service] API request configuration:", {
+      model: requestOptions.model,
+      useVision,
+      messageCount: messages.length,
+      hasImageInLastMessage: useVision && Array.isArray(messages[messages.length - 1]?.content),
+    });
 
     // Call OpenAI API with error handling and fallback
     let completion: OpenAI.Chat.Completions.ChatCompletion;
@@ -290,33 +318,79 @@ class LLMService {
         const functionCall = assistantMessage.function_call;
         if (functionCall.name === "annotate_canvas" && functionCall.arguments) {
           // Parse function arguments
-          const args = JSON.parse(functionCall.arguments);
+          let args: { action?: string; target?: string };
+          try {
+            args = JSON.parse(functionCall.arguments);
+          } catch (parseError) {
+            console.error("[LLM Service] Failed to parse function arguments:", parseError);
+            throw parseError;
+          }
+          
           const action = args.action as "highlight" | "circle";
           const target = args.target as string;
 
-          // Resolve target to bounding box using annotation resolver
-          const bounds = annotationResolver.resolve(target);
-
-          if (bounds) {
-            // Create annotation
-            const annotation: TutorAnnotation = {
-              id: `annotation_${Date.now()}_${Math.random()
-                .toString(36)
-                .substring(2, 9)}`,
-              type: action,
-              target,
-              bounds,
-              timestamp: Date.now(),
-            };
-            annotations = [annotation];
-            console.log(
-              `[LLM Service] Created annotation: ${action} on "${target}"`
-            );
+          if (!action || !target) {
+            console.warn("[LLM Service] Invalid function arguments:", args);
+            // Continue without annotation
           } else {
-            // Tier 3: Silent failure - log but continue
-            console.log(
-              `[LLM Service] Failed to resolve annotation target: "${target}"`
-            );
+            // Register semantic elements from client before resolving
+            if (semanticElements && semanticElements.length > 0) {
+              annotationResolver.registerElements(semanticElements);
+              // Update problem bounds after registering elements (needed for "left side", "right side", etc.)
+              annotationResolver.updateProblemBounds();
+              console.log(`[LLM Service] Registered ${semanticElements.length} semantic elements from client:`, 
+                semanticElements.map(e => e.id));
+            } else {
+              console.warn(`[LLM Service] No semantic elements received from client for annotation resolution`);
+            }
+            
+            // Set canvas snapshot for Vision API fallback
+            if (canvasSnapshot) {
+              annotationResolver.setCanvasSnapshot(canvasSnapshot);
+            }
+
+            // Resolve target to bounding box using annotation resolver
+            let bounds: AnnotationBounds | null = null;
+            try {
+              bounds = await annotationResolver.resolve(target);
+            } catch (resolveError) {
+              console.error("[LLM Service] Error resolving annotation target:", resolveError);
+              // Continue without annotation
+            }
+
+            if (bounds) {
+              // Validate bounds
+              if (bounds.width > 0 && bounds.height > 0 && 
+                  bounds.x >= 0 && bounds.y >= 0 &&
+                  bounds.x < 10000 && bounds.y < 10000 && // Sanity check
+                  bounds.width < 10000 && bounds.height < 10000) {
+                // Create annotation
+                const annotation: TutorAnnotation = {
+                  id: `annotation_${Date.now()}_${Math.random()
+                    .toString(36)
+                    .substring(2, 9)}`,
+                  type: action,
+                  target,
+                  bounds,
+                  timestamp: Date.now(),
+                };
+                annotations = [annotation];
+                console.log(
+                  `[LLM Service] Created annotation: ${action} on "${target}" with bounds:`,
+                  bounds
+                );
+              } else {
+                console.warn(
+                  `[LLM Service] Invalid bounds for "${target}":`,
+                  bounds
+                );
+              }
+            } else {
+              // All tiers failed - log but continue
+              console.log(
+                `[LLM Service] Failed to resolve annotation target: "${target}"`
+              );
+            }
           }
         }
       } catch (error) {
@@ -324,13 +398,40 @@ class LLMService {
           "[LLM Service] Error processing function call:",
           error
         );
-        // Silent failure - continue with message response
+        // Log full error details for debugging
+        if (error instanceof Error) {
+          console.error("[LLM Service] Error details:", {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+          });
+        }
+        // Silent failure - continue with message response (don't throw)
       }
     }
 
     // Get content from response (may be null if only function call)
-    const content = assistantMessage.content || "";
+    let content = assistantMessage.content || "";
 
+    // If annotation failed and there's no content, provide a fallback message
+    if (!content && assistantMessage.function_call && !annotations) {
+      // Annotation was attempted but failed to resolve
+      // Provide a helpful fallback message instead of throwing an error
+      const functionCall = assistantMessage.function_call;
+      if (functionCall.name === "annotate_canvas") {
+        try {
+          const args = JSON.parse(functionCall.arguments || "{}");
+          const target = args.target || "that element";
+          content = `I tried to highlight "${target}" on your whiteboard, but I couldn't locate it precisely. Let me help you with words instead.`;
+        } catch {
+          content = "I tried to add a visual annotation but couldn't locate the element. Let me help you with words instead.";
+        }
+      } else {
+        content = "I processed your request. How can I help you further?";
+      }
+    }
+
+    // If still no content and no annotations, this is an error
     if (!content && !annotations) {
       throw new Error("No valid response (content or annotations) from OpenAI API");
     }

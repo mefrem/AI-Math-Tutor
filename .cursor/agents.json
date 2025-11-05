@@ -1,0 +1,58 @@
+{
+  "agents": {
+    "scrum-story-master": {
+      "name": "scrum-story-master",
+      "alias": ["bob", "scrum-master", "story-master"],
+      "file": ".claude/agents/scrum-story-master.md",
+      "persona": "Bob (🏃), Technical Scrum Master",
+      "description": "Creates detailed user stories, manages epics, conducts retrospectives",
+      "useWhen": [
+        "Creating user stories",
+        "Managing epics",
+        "Need agile process guidance",
+        "Reviewing story drafts"
+      ]
+    },
+    "dev-story-implementer": {
+      "name": "dev-story-implementer",
+      "alias": ["james", "developer", "dev"],
+      "file": ".claude/agents/dev-story-implementer.md",
+      "persona": "James (💻), Expert Senior Software Engineer",
+      "description": "Implements development stories following BMAD framework",
+      "useWhen": [
+        "Implementing stories",
+        "Writing code following BMAD framework",
+        "Debugging story-related code",
+        "Applying QA feedback"
+      ]
+    },
+    "qa-test-architect": {
+      "name": "qa-test-architect",
+      "alias": ["quinn", "qa", "tester"],
+      "file": ".claude/agents/qa-test-architect.md",
+      "persona": "Quinn, Test Architect and Quality Advisor",
+      "description": "Conducts QA reviews, makes quality gate decisions, assesses test coverage",
+      "useWhen": [
+        "Conducting QA reviews",
+        "Making quality gate decisions",
+        "Assessing test coverage",
+        "Analyzing code/story quality"
+      ]
+    },
+    "orca-orchestrator": {
+      "name": "orca-orchestrator",
+      "alias": ["orca", "orchestrator"],
+      "file": ".claude/agents/orca-orchestrator.md",
+      "persona": "Orca, Workflow Orchestrator",
+      "description": "Orchestrates complete development workflows (Story → Dev → QA cycles)",
+      "useWhen": [
+        "Need complete development workflow",
+        "Want automated story → implementation → QA cycles",
+        "Building entire epics autonomously"
+      ]
+    }
+  },
+  "defaultAgent": null,
+  "workflowMode": false
+}
+

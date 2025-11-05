@@ -1,0 +1,21 @@
+{
+  "name": "agent-router-mcp-server",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "MCP server for routing to Claude Desktop agents",
+  "main": "dist/server.js",
+  "scripts": {
+    "start": "tsx server.ts",
+    "build": "tsc",
+    "dev": "tsx watch server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "typescript": "^5.3.3"
+  }
+}
+

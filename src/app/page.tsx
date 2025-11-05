@@ -1,5 +1,5 @@
-import { LandingPage } from "@/components/problem-input/LandingPage";
+import { UnifiedProblemInput } from "@/components/problem-input/UnifiedProblemInput";
 
 export default function Home() {
-  return <LandingPage />;
+  return <UnifiedProblemInput />;
 }
