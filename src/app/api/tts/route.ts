@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const buffer = await generateTTS(text);
 
     // Return audio file
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer as unknown as BodyInit, {
       headers: {
         'Content-Type': 'audio/mpeg',
         'Content-Length': buffer.length.toString(),

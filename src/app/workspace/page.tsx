@@ -11,7 +11,7 @@ import { useTutoringStore } from "@/stores/useTutoringStore";
 import { Whiteboard, WhiteboardRef } from "@/components/whiteboard/Whiteboard";
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import { RestartButton } from "@/components/controls/RestartButton";
-import { Avatar } from "@/components/avatar/Avatar";
+import { AvatarFallback } from "@/components/avatar/AvatarFallback";
 import { AudioProvider } from "@/contexts/AudioContext";
 import { VoiceSettings } from "@/components/settings/VoiceSettings";
 import { useState } from "react";
@@ -87,8 +87,9 @@ export default function WorkspacePage() {
             {/* Story 4.3: Avatar positioned top-right */}
             {/* Story 4.4: Avatar with lip-sync animation */}
             {/* Story 4.5: Avatar with thinking indicator */}
+            {/* Feature: 3D VRM Avatar with automatic WebGL detection and 2D fallback */}
             <div className="absolute top-4 right-4 z-10">
-              <Avatar state={isLoading ? 'thinking' : 'idle'} size={180} />
+              <AvatarFallback state={isLoading ? 'thinking' : 'idle'} size={180} />
             </div>
             <div className="flex-1 p-4">
               <div className="w-full h-full">

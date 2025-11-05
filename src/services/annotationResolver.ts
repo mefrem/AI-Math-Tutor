@@ -551,10 +551,10 @@ export class AnnotationResolver {
       
       equalsSign = bestEqualsSign.element.bounds;
       
-      console.log(`[AnnotationResolver] Found ${equalsSigns.length} equals sign(s), using one at x=${equalsSign.x}:`, {
+      console.log(`[AnnotationResolver] Found ${equalsSigns.length} equals sign(s), using one at x=${equalsSign!.x}:`, {
         allElementsSorted: allElementsSorted.map(e => ({ id: e.id, x: e.x })),
         equalsSigns: equalsSigns.map(e => ({ id: e.id, x: e.x })),
-        selectedEqualsSign: { x: equalsSign.x, width: equalsSign.width },
+        selectedEqualsSign: { x: equalsSign!.x, width: equalsSign!.width },
       });
     } else {
       // Fallback: try type-based search
@@ -569,13 +569,13 @@ export class AnnotationResolver {
     // try to find the correct split point by looking for the gap between left and right side elements
     if (equalsSign) {
       // Validate equals sign position: it should have elements on both sides
-      const elementsBeforeEquals = allElementsSorted.filter(e => e.x < equalsSign.x);
-      const elementsAfterEquals = allElementsSorted.filter(e => e.x > equalsSign.x + equalsSign.width);
+      const elementsBeforeEquals = allElementsSorted.filter(e => e.x < equalsSign!.x);
+      const elementsAfterEquals = allElementsSorted.filter(e => e.x > equalsSign!.x + equalsSign!.width);
       
       // If equals sign is at the very left (no elements before) or at the very right (no elements after),
       // it's probably wrong. Try to find a better split point.
       if (elementsBeforeEquals.length === 0 || elementsAfterEquals.length === 0) {
-        console.warn(`[AnnotationResolver] Equals sign at x=${equalsSign.x} appears to be at edge (before: ${elementsBeforeEquals.length}, after: ${elementsAfterEquals.length}). Attempting to find better split.`);
+        console.warn(`[AnnotationResolver] Equals sign at x=${equalsSign!.x} appears to be at edge (before: ${elementsBeforeEquals.length}, after: ${elementsAfterEquals.length}). Attempting to find better split.`);
         
         // Look for the largest gap between elements that might indicate the equation split
         let largestGap = 0;
@@ -626,8 +626,8 @@ export class AnnotationResolver {
       
       // Find the first large number on the right side (this should be the answer, like "13")
       // This helps us identify where the left side actually ends
-      const rightSideNumbers = allElementsSorted.filter(e => 
-        e.x > equalsSign.x + equalsSign.width &&
+      const rightSideNumbers = allElementsSorted.filter(e =>
+        e.x > equalsSign!.x + equalsSign!.width &&
         e.id.startsWith('number_') &&
         e.id !== 'number_5' && e.id !== 'number 5' // Exclude "5" which should be on the left
       );
@@ -636,7 +636,7 @@ export class AnnotationResolver {
       // Otherwise, use the equals sign position
       const splitPoint = rightSideNumbers.length > 0 
         ? rightSideNumbers[0].x  // Split before the first right-side number
-        : equalsSign.x;           // Use equals sign position
+        : equalsSign!.x;           // Use equals sign position
       
       // Log all elements for debugging
       const allElements = Array.from(this.semanticElements.entries()).map(([id, element]) => ({
@@ -647,7 +647,7 @@ export class AnnotationResolver {
         content: id.split('_').slice(1).join('_'),
       }));
       console.log(`[AnnotationResolver] All registered elements for left/right side calculation:`, {
-        equalsSign: { x: equalsSign.x, width: equalsSign.width, right: equalsSign.x + equalsSign.width },
+        equalsSign: { x: equalsSign!.x, width: equalsSign!.width, right: equalsSign!.x + equalsSign!.width },
         splitPoint,
         rightSideNumbers: rightSideNumbers.map(e => ({ id: e.id, x: e.x })),
         allElements,
@@ -692,14 +692,14 @@ export class AnnotationResolver {
       }
       
       // Find all elements that are to the right of the equals sign
-      // Right side: all elements where element.x >= equalsSign.x + equalsSign.width
+      // Right side: all elements where element.x >= equalsSign!.x + equalsSign!.width
       let rightMinX = Infinity;
       let rightMaxX = -Infinity;
       let rightMinY = Infinity;
       let rightMaxY = -Infinity;
       
       for (const element of this.semanticElements.values()) {
-        const equalsRight = equalsSign.x + equalsSign.width;
+        const equalsRight = equalsSign!.x + equalsSign!.width;
         // Include elements that are entirely to the right of the equals sign
         if (element.bounds.x >= equalsRight - 5) { // -5 pixel tolerance for spacing
           rightMinX = Math.min(rightMinX, element.bounds.x);
@@ -722,7 +722,7 @@ export class AnnotationResolver {
         leftSideBounds = {
           x: bounds.minX,
           y: bounds.minY,
-          width: equalsSign.x - bounds.minX,
+          width: equalsSign!.x - bounds.minX,
           height: bounds.height,
         };
       }
@@ -738,23 +738,23 @@ export class AnnotationResolver {
       } else {
         // Fallback: calculate from equals sign to maxX
         rightSideBounds = {
-          x: equalsSign.x + equalsSign.width,
+          x: equalsSign!.x + equalsSign!.width,
           y: bounds.minY,
-          width: bounds.maxX - (equalsSign.x + equalsSign.width),
+          width: bounds.maxX - (equalsSign!.x + equalsSign!.width),
           height: bounds.height,
         };
       }
       
-      console.log(`[AnnotationResolver] Found equals sign at x=${equalsSign.x}, calculating left/right sides:`, {
-        equalsSign: { x: equalsSign.x, width: equalsSign.width },
+      console.log(`[AnnotationResolver] Found equals sign at x=${equalsSign!.x}, calculating left/right sides:`, {
+        equalsSign: { x: equalsSign!.x, width: equalsSign!.width },
         leftSide: leftSideBounds,
         rightSide: rightSideBounds,
         problemBounds: bounds,
         leftElements: Array.from(this.semanticElements.values()).filter(e => 
-          (e.bounds.x + e.bounds.width) <= equalsSign.x + 5
+          (e.bounds.x + e.bounds.width) <= equalsSign!.x + 5
         ).map(e => e.bounds),
         rightElements: Array.from(this.semanticElements.values()).filter(e => 
-          e.bounds.x >= (equalsSign.x + equalsSign.width) - 5
+          e.bounds.x >= (equalsSign!.x + equalsSign!.width) - 5
         ).map(e => e.bounds),
       });
     } else {
