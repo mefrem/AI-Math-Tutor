@@ -9,6 +9,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { STTResponse } from '@/types/api';
 import { useAudio } from '@/contexts/AudioContext';
+import { useFirstVisit } from '@/hooks/useFirstVisit';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -22,6 +23,12 @@ type VoiceState = 'idle' | 'recording' | 'processing';
 export function ChatInput({ onSend, disabled = false, isLoading = false }: ChatInputProps) {
   // Story 4.6: Audio context for turn-based flow
   const { isPlaying } = useAudio();
+
+  // Voice mode discovery hint
+  const { showHint: showVoiceHint, markDiscovered } = useFirstVisit({
+    key: 'voice-mode-discovery',
+    maxVisits: 3,
+  });
 
   const [message, setMessage] = useState('');
   const [inputMode, setInputMode] = useState<InputMode>('text');
@@ -249,15 +256,23 @@ export function ChatInput({ onSend, disabled = false, isLoading = false }: ChatI
               return;
             }
             setInputMode('voice');
+            markDiscovered(); // Mark as discovered when clicked
           }}
-          className={`px-3 py-1 text-xs rounded-md transition-colors ${
+          className={`relative px-3 py-1 text-xs rounded-md transition-colors ${
             inputMode === 'voice'
               ? 'bg-blue-500 text-white'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
           disabled={disabled || isLoading}
+          title={showVoiceHint ? "🎤 Try voice input! Hold to record, release to send" : "Voice input"}
         >
           Voice
+          {showVoiceHint && (
+            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+            </span>
+          )}
         </button>
       </div>
 

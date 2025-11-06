@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ConversationMessage } from '@/types/models';
 import { LatexRenderer } from './LatexRenderer';
 import { useAudio } from '@/contexts/AudioContext';
+import { formatRelativeTime } from '@/utils/dateFormatting';
 
 interface MessageBubbleProps {
   message: ConversationMessage;
@@ -315,10 +316,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             isStudent ? 'text-blue-100' : 'text-gray-500'
           }`}
         >
-          {new Date(message.timestamp).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
+          {formatRelativeTime(new Date(message.timestamp))}
         </p>
       </div>
     </div>

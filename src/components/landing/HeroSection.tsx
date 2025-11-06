@@ -45,7 +45,7 @@ export function HeroSection() {
                   Enter a problem, upload an image, or practice with a topic
                 </p>
               </div>
-              <UnifiedProblemInput />
+              <UnifiedProblemInput embedded={true} />
             </div>
           </div>
         </div>

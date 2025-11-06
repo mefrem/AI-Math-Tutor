@@ -41,33 +41,39 @@ export function DrawingToolbar({ onClear }: DrawingToolbarProps) {
 
   return (
     <>
-      <div className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded-lg shadow-sm">
-        {/* Undo button */}
+      <div className="flex items-center gap-2">
+        {/* Undo button - icon only */}
         <button
           onClick={handleUndo}
           disabled={!hasLines}
-          className={`px-4 py-2 rounded-md font-medium transition-colors ${
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-md ${
             hasLines
-              ? "bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              ? "bg-white/90 backdrop-blur-sm text-gray-700 hover:bg-white hover:shadow-lg active:scale-95"
+              : "bg-gray-200/80 text-gray-400 cursor-not-allowed"
           }`}
           aria-label="Undo last drawing"
+          title="Undo (Ctrl+Z)"
         >
-          Undo
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+          </svg>
         </button>
 
-        {/* Clear button */}
+        {/* Clear button - icon only */}
         <button
           onClick={handleClear}
           disabled={!hasLines}
-          className={`px-4 py-2 rounded-md font-medium transition-colors ${
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-md ${
             hasLines
-              ? "bg-orange-500 text-white hover:bg-orange-600 active:bg-orange-700"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              ? "bg-white/90 backdrop-blur-sm text-orange-600 hover:bg-white hover:shadow-lg active:scale-95"
+              : "bg-gray-200/80 text-gray-400 cursor-not-allowed"
           }`}
           aria-label="Clear all drawings"
+          title="Clear all"
         >
-          Clear
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
         </button>
       </div>
 
