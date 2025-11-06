@@ -22,7 +22,8 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
   // Story 4.4: Audio context for lip-sync
   // Story 4.7: Audio context for voice settings
-  const { setIsPlaying: setAudioPlaying, settings } = useAudio();
+  // Phase 2: Viseme timeline for realistic lip-sync
+  const { setIsPlaying: setAudioPlaying, settings, setVisemeTimeline, setCurrentAudioTime } = useAudio();
   
   // Debug logging for avatar audio
   useEffect(() => {
@@ -66,20 +67,34 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       audio.volume = settings.volume / 100; // Convert 0-100 to 0-1
       audio.playbackRate = settings.playbackSpeed;
 
+      // Phase 2: Track audio time for viseme synchronization
+      let timeUpdateInterval: NodeJS.Timeout | null = null;
+
       audio.addEventListener('play', () => {
         console.log('[MessageBubble] Audio playing - notifying avatar');
         setIsPlaying(true);
         setAudioPlaying(true); // Story 4.4: Notify avatar to start lip-sync
+
+        // Phase 2: Update audio time for viseme sync (every 50ms for smooth animation)
+        timeUpdateInterval = setInterval(() => {
+          if (audio.currentTime !== undefined) {
+            setCurrentAudioTime(audio.currentTime * 1000); // Convert to milliseconds
+          }
+        }, 50);
       });
       audio.addEventListener('pause', () => {
         console.log('[MessageBubble] Audio paused - notifying avatar');
         setIsPlaying(false);
         setAudioPlaying(false); // Story 4.4: Notify avatar to stop lip-sync
+        if (timeUpdateInterval) clearInterval(timeUpdateInterval);
       });
       audio.addEventListener('ended', () => {
         console.log('[MessageBubble] Audio ended - notifying avatar');
         setIsPlaying(false);
         setAudioPlaying(false); // Story 4.4: Notify avatar to stop lip-sync
+        if (timeUpdateInterval) clearInterval(timeUpdateInterval);
+        setCurrentAudioTime(0); // Reset time
+        setVisemeTimeline(null); // Clear viseme timeline
       });
       
       // Add error event listener for better debugging
@@ -135,9 +150,24 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           throw new Error('Failed to generate speech');
         }
 
-        const audioBlob = await response.blob();
+        // Phase 2: Handle JSON response with audio and visemes
+        const data = await response.json();
+
+        // Convert base64 audio to blob
+        const audioData = atob(data.audio);
+        const audioArray = new Uint8Array(audioData.length);
+        for (let i = 0; i < audioData.length; i++) {
+          audioArray[i] = audioData.charCodeAt(i);
+        }
+        const audioBlob = new Blob([audioArray], { type: 'audio/mpeg' });
         const url = URL.createObjectURL(audioBlob);
         currentAudioUrl = url;
+
+        // Phase 2: Set viseme timeline for lip-sync
+        if (data.visemes && isMounted) {
+          console.log('[MessageBubble] Viseme timeline received:', data.visemes.length, 'frames');
+          setVisemeTimeline(data.visemes);
+        }
 
         if (isMounted) {
           setupAudio(url);

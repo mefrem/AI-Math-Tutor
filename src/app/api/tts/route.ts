@@ -2,10 +2,12 @@
  * Text-to-Speech API Route
  * Story 4.1: Converts tutor text responses to speech using OpenAI TTS API
  * Story 5.2: Performance measurement added
+ * Phase 2: Generate viseme timeline for realistic lip-sync
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { generateTTS } from '@/services/ttsService';
+import { generateVisemeTimeline } from '@/services/avatar/lipSyncController';
 
 // Use Node.js runtime for Buffer support (edge runtime doesn't support Buffer)
 export const runtime = 'nodejs';
@@ -32,12 +34,22 @@ export async function POST(request: NextRequest) {
     // Generate TTS audio using service function
     const buffer = await generateTTS(text);
 
-    // Return audio file
-    return new NextResponse(buffer as unknown as BodyInit, {
+    // Estimate audio duration (OpenAI TTS averages ~150 words/minute)
+    // This is an approximation; actual duration may vary slightly
+    const wordCount = text.split(/\s+/).length;
+    const estimatedDurationMs = (wordCount / 150) * 60 * 1000;
+
+    // Phase 2: Generate viseme timeline for lip-sync
+    const visemes = generateVisemeTimeline(text, estimatedDurationMs);
+
+    // Return JSON with both audio (base64) and visemes
+    return NextResponse.json({
+      audio: buffer.toString('base64'),
+      visemes,
+      duration: estimatedDurationMs,
+    }, {
       headers: {
-        'Content-Type': 'audio/mpeg',
-        'Content-Length': buffer.length.toString(),
-        'Cache-Control': 'no-cache', // Don't cache TTS audio
+        'Cache-Control': 'no-cache', // Don't cache TTS responses
       },
     });
   } catch (error) {

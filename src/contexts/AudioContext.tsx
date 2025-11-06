@@ -2,11 +2,13 @@
  * Audio Context
  * Story 4.4: Context for sharing audio playing state between MessageBubble and Avatar
  * Story 4.7: Context for voice quality and accessibility settings
+ * Phase 2: Viseme timeline support for realistic lip-sync
  */
 
 'use client';
 
 import { createContext, useContext, useState, ReactNode } from 'react';
+import type { VisemeFrame } from '@/services/avatar/visemeMapper';
 
 interface VoiceSettings {
   volume: number; // 0-100, default 100
@@ -19,6 +21,11 @@ interface AudioContextType {
   setIsPlaying: (playing: boolean) => void;
   settings: VoiceSettings;
   setSettings: (settings: Partial<VoiceSettings>) => void;
+  // Phase 2: Viseme timeline for lip-sync
+  visemeTimeline: VisemeFrame[] | null;
+  setVisemeTimeline: (timeline: VisemeFrame[] | null) => void;
+  currentAudioTime: number; // Current playback time in milliseconds
+  setCurrentAudioTime: (time: number) => void;
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
@@ -32,6 +39,8 @@ const defaultSettings: VoiceSettings = {
 export function AudioProvider({ children }: { children: ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [settings, setSettingsState] = useState<VoiceSettings>(defaultSettings);
+  const [visemeTimeline, setVisemeTimeline] = useState<VisemeFrame[] | null>(null);
+  const [currentAudioTime, setCurrentAudioTime] = useState(0);
 
   // Story 4.7: Update settings (partial update)
   const setSettings = (newSettings: Partial<VoiceSettings>) => {
@@ -39,7 +48,18 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AudioContext.Provider value={{ isPlaying, setIsPlaying, settings, setSettings }}>
+    <AudioContext.Provider
+      value={{
+        isPlaying,
+        setIsPlaying,
+        settings,
+        setSettings,
+        visemeTimeline,
+        setVisemeTimeline,
+        currentAudioTime,
+        setCurrentAudioTime,
+      }}
+    >
       {children}
     </AudioContext.Provider>
   );
