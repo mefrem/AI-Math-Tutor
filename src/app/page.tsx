@@ -1,5 +1,5 @@
-import { HeroSection } from "@/components/landing/HeroSection";
+import { UnifiedProblemInput } from "@/components/problem-input/UnifiedProblemInput";
 
 export default function Home() {
-  return <HeroSection />;
+  return <UnifiedProblemInput />;
 }
