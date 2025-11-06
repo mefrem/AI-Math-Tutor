@@ -5,3 +5,6 @@ cd "$(dirname "$0")/../.."
 npx tsx .cursor/mcp-server/server.ts
 
 
+
+
+

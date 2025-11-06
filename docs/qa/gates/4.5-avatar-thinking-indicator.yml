@@ -60,3 +60,6 @@ recommendations:
     - action: "Monitor animation performance to ensure smooth pulsing"
       refs: ["src/components/avatar/Avatar.tsx"]
 
+
+
+

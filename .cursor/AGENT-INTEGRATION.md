@@ -172,3 +172,6 @@ The MCP server is configured in `~/.cursor/mcp.json`:
 
 **Your agents are now fully integrated into Cursor via MCP!** 🎉
 
+
+
+

@@ -66,3 +66,6 @@ node .cursor/agent-helper.js find scrum     # Find agent by query
 
 No complex setup needed. Just mention the agent you need, and I'll handle the rest!
 
+
+
+

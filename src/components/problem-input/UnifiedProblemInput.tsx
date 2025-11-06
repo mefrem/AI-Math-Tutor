@@ -45,24 +45,10 @@ export function UnifiedProblemInput() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-start px-4 py-8 md:py-12 bg-gradient-to-b from-blue-50 to-white">
-      <div className="w-full max-w-4xl mx-auto">
-        {/* Hero Section - Clear value proposition */}
-        <div className="mb-10 md:mb-12 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
-            AI Math Tutor
-          </h1>
-          <p className="text-lg md:text-xl text-gray-600 mb-2">
-            Get help with your math problem
-          </p>
-          <p className="text-sm md:text-base text-gray-500">
-            Type it in, upload a photo, or practice a new topic
-          </p>
-        </div>
-
+    <div className="w-full">
         {/* Primary Action: Solve a Problem */}
         <div className="mb-6">
-          <div className="bg-white rounded-2xl shadow-lg border-2 border-blue-500 overflow-hidden">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border-2 border-blue-400 overflow-hidden">
             <div className="p-6 md:p-8">
               {!activeInput ? (
                 // Initial state: Choose input method
@@ -171,7 +157,7 @@ export function UnifiedProblemInput() {
         </div>
 
         {/* Secondary Action: Practice (Collapsible) */}
-        <div className="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
           <button
             onClick={() => setShowPractice(!showPractice)}
             className="w-full p-6 md:p-8 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
@@ -211,7 +197,6 @@ export function UnifiedProblemInput() {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 }

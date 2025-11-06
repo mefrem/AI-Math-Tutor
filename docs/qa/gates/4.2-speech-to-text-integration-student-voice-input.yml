@@ -62,3 +62,6 @@ recommendations:
     - action: "Consider adding audio level indicator during recording for better UX"
       refs: ["src/components/chat/ChatInput.tsx"]
 
+
+
+

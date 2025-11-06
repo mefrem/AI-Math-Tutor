@@ -60,3 +60,6 @@ recommendations:
     - action: "Use Konva's listening: false for non-interactive layers in future stories"
       refs: ["src/components/whiteboard/Whiteboard.tsx:122-153"]
 
+
+
+

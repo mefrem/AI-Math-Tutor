@@ -59,3 +59,6 @@ recommendations:
       refs: ["src/components/avatar/Avatar.tsx"]
     - action: "Monitor animation performance in production to ensure 60fps is maintained"
       refs: ["src/components/avatar/Avatar.tsx"]
+
+
+

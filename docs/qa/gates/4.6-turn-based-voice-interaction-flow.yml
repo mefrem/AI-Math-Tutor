@@ -60,3 +60,6 @@ recommendations:
     - action: "Consider adding more sophisticated state transitions if needed"
       refs: ["src/components/chat/ChatInput.tsx"]
 
+
+
+

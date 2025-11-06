@@ -192,3 +192,6 @@ The server will listen on stdio for MCP protocol messages.
 - Update `agents.json` with new agent metadata
 - Restart Cursor to pick up new agents
 
+
+
+

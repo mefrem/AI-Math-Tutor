@@ -130,6 +130,9 @@ Context: [Relevant background]
 ## Sub-Agent Invocation Guidelines
 
 When invoking sub-agents:
+- Explicitly state:
+"Invoking @sub-agent-name to handle [specific task]"
+Then show the sub-agent's response.
 - Use the Task tool with appropriate agent identifier (scrum-master, developer, qa)
 - Provide comprehensive context in your invocation message
 - Wait for complete response before proceeding to next phase
