@@ -50,8 +50,9 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     let isMounted = true;
     let currentAudioUrl: string | null = null;
 
-    // Check if server already generated audio (from ChatResponse)
+    // Check if server already generated audio and visemes (from ChatResponse)
     const serverAudioUrl = message.metadata?.audioUrl;
+    const serverVisemes = message.metadata?.visemes;
 
     const setupAudio = (url: string) => {
       if (!isMounted) return;
@@ -130,8 +131,15 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
         // If server already generated audio (base64 data URL), use it directly
         if (serverAudioUrl && serverAudioUrl.startsWith('data:audio/')) {
-          console.log('[MessageBubble] Using server-generated audio');
+          console.log('[MessageBubble] Using server-generated audio and visemes');
           currentAudioUrl = serverAudioUrl;
+
+          // Phase 2: Set viseme timeline from server response
+          if (serverVisemes && isMounted) {
+            console.log('[MessageBubble] Server viseme timeline received:', serverVisemes.length, 'frames');
+            setVisemeTimeline(serverVisemes);
+          }
+
           setupAudio(serverAudioUrl);
           return;
         }

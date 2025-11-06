@@ -52,6 +52,18 @@ function VRMModel({ vrm, state }: { vrm: VRM; state: 'idle' | 'thinking' | 'spea
 
     const deltaTime = clockRef.current.getDelta();
 
+    // Lower arms from T-pose (do once on first frame)
+    if (vrm.humanoid && modelRef.current) {
+      const leftUpperArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+      const rightUpperArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+
+      if (leftUpperArm && rightUpperArm) {
+        // Rotate arms down from T-pose (around Z axis) - more natural pose
+        leftUpperArm.rotation.z = -Math.PI / 2.2; // ~82 degrees down
+        rightUpperArm.rotation.z = Math.PI / 2.2; // ~82 degrees down
+      }
+    }
+
     // Update VRM (handles animations)
     vrm.update(deltaTime);
 
@@ -130,6 +142,17 @@ function VRMModel({ vrm, state }: { vrm: VRM; state: 'idle' | 'thinking' | 'spea
 }
 
 /**
+ * Camera Helper - makes camera look at head position
+ */
+function CameraController() {
+  useFrame(({ camera }) => {
+    // Look at head height (Y=1.4) instead of model origin
+    camera.lookAt(0, 1.4, 0);
+  });
+  return null;
+}
+
+/**
  * 3D Avatar Scene Component
  */
 function AvatarScene({ state }: { state: 'idle' | 'thinking' | 'speaking' }) {
@@ -143,6 +166,36 @@ function AvatarScene({ state }: { state: 'idle' | 'thinking' | 'speaking' }) {
     getVRMModel()
       .then((loadedVRM) => {
         if (mounted) {
+          // Debug: Log VRM bone positions to find head Y position
+          if (loadedVRM.humanoid) {
+            const head = loadedVRM.humanoid.getNormalizedBoneNode('head');
+            const neck = loadedVRM.humanoid.getNormalizedBoneNode('neck');
+            const hips = loadedVRM.humanoid.getNormalizedBoneNode('hips');
+
+            console.log('[VRMAvatar] Model bone positions:');
+            if (head) {
+              head.updateWorldMatrix(true, false);
+              console.log('  Head Y:', head.position.y, 'World Y:', head.getWorldPosition(new THREE.Vector3()).y);
+            }
+            if (neck) {
+              neck.updateWorldMatrix(true, false);
+              console.log('  Neck Y:', neck.position.y, 'World Y:', neck.getWorldPosition(new THREE.Vector3()).y);
+            }
+            if (hips) {
+              hips.updateWorldMatrix(true, false);
+              console.log('  Hips Y:', hips.position.y, 'World Y:', hips.getWorldPosition(new THREE.Vector3()).y);
+            }
+
+            // Calculate bounding box to find model height
+            const box = new THREE.Box3().setFromObject(loadedVRM.scene);
+            console.log('  Model bounding box:', {
+              min: box.min.y,
+              max: box.max.y,
+              height: box.max.y - box.min.y,
+              center: (box.min.y + box.max.y) / 2
+            });
+          }
+
           setVrm(loadedVRM);
           setLoading(false);
         }
@@ -178,7 +231,11 @@ function AvatarScene({ state }: { state: 'idle' | 'thinking' | 'speaking' }) {
     );
   }
 
-  return <VRMModel vrm={vrm} state={state} />;
+  return (
+    <group rotation={[0, Math.PI, 0]}>
+      <VRMModel vrm={vrm} state={state} />
+    </group>
+  );
 }
 
 /**
@@ -201,10 +258,13 @@ export default function VRMAvatar({ state = 'idle', size = 180 }: VRMAvatarProps
       }}
     >
       <Canvas
-        camera={{ position: [0, 1.3, 2.5], fov: 30 }}
+        camera={{ position: [0, 1.4, 1.2], fov: 35 }}
         style={{ width: '100%', height: '100%' }}
         gl={{ antialias: true, alpha: true }}
       >
+        {/* Camera controller to look at head */}
+        <CameraController />
+
         {/* Lighting */}
         <ambientLight intensity={0.8} />
         <directionalLight

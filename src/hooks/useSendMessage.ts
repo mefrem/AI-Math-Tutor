@@ -75,13 +75,15 @@ export function useSendMessage() {
           semanticElements // Client-side registered semantic elements
         );
 
-        // Add server-generated audio to message metadata if present
+        // Add server-generated audio and visemes to message metadata if present
         const tutorMessage: ConversationMessage = {
           ...response.message,
           metadata: {
             ...response.message.metadata,
             // If server generated audio, store it in metadata
             ...(response.audio && { audioUrl: response.audio }),
+            // Phase 2: Store viseme timeline for lip-sync
+            ...(response.visemes && { visemes: response.visemes }),
           },
         };
 

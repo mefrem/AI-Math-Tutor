@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { llmService } from '@/services/llmService';
 import { generateTTS, bufferToDataURL } from '@/services/ttsService';
+import { generateVisemeTimeline } from '@/services/avatar/lipSyncController';
 import { handleApiError } from '@/lib/errorHandler';
 import type { ChatRequest, ChatResponse, ApiError } from '@/types/api';
 
@@ -78,14 +79,21 @@ export async function POST(request: NextRequest) {
       chatRequest.semanticElements // Pass client-side semantic elements for annotation resolution
     );
 
-    // 3. Generate TTS audio immediately after getting LLM response
+    // 3. Generate TTS audio and viseme timeline immediately after getting LLM response
     // This eliminates one client-server round-trip
     let audioDataURL: string | undefined;
+    let visemeTimeline: any[] | undefined;
     try {
       if (result.message.content && result.message.role === 'tutor') {
         const audioBuffer = await generateTTS(result.message.content);
         audioDataURL = bufferToDataURL(audioBuffer);
-        console.log('[API Route] TTS audio generated successfully');
+
+        // Phase 2: Generate viseme timeline for lip-sync
+        const wordCount = result.message.content.split(/\s+/).length;
+        const estimatedDurationMs = (wordCount / 150) * 60 * 1000;
+        visemeTimeline = generateVisemeTimeline(result.message.content, estimatedDurationMs);
+
+        console.log('[API Route] TTS audio and viseme timeline generated successfully');
       }
     } catch (ttsError) {
       // Graceful degradation: If TTS fails, still return text response
@@ -93,11 +101,12 @@ export async function POST(request: NextRequest) {
       // Don't throw - continue with text-only response
     }
 
-    // 4. Return response with annotations and audio if present
+    // 4. Return response with annotations, audio, and visemes if present
     const response: ChatResponse = {
       message: result.message,
       annotations: result.annotations, // Story 3.4: tutor annotations
       audio: audioDataURL, // Server-side generated TTS audio
+      visemes: visemeTimeline, // Phase 2: viseme timeline for lip-sync
     };
 
     return NextResponse.json(response);

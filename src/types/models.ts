@@ -15,6 +15,7 @@ export interface MessageMetadata {
   canvasSnapshot?: string; // base64 encoded image
   audioUrl?: string; // TTS audio URL (if voice enabled)
   annotationActions?: CanvasAnnotation[]; // Tutor visual actions
+  visemes?: any[]; // Phase 2: Viseme timeline for lip-sync
 }
 
 export interface CanvasAnnotation {

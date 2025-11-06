@@ -84,12 +84,12 @@ export default function WorkspacePage() {
 
           {/* Right panel - Whiteboard (70% width) */}
           <div className="hidden md:flex md:w-[70%] flex-col bg-white relative">
-            {/* Story 4.3: Avatar positioned top-right */}
+            {/* Story 4.3: Avatar positioned in viewport */}
             {/* Story 4.4: Avatar with lip-sync animation */}
             {/* Story 4.5: Avatar with thinking indicator */}
             {/* Feature: 3D VRM Avatar with automatic WebGL detection and 2D fallback */}
-            <div className="absolute top-4 right-4 z-10">
-              <AvatarFallback state={isLoading ? 'thinking' : 'idle'} size={180} />
+            <div className="absolute top-[35%] right-8 -translate-y-1/2 z-10">
+              <AvatarFallback state={isLoading ? 'thinking' : 'idle'} size={300} />
             </div>
             <div className="flex-1 p-4">
               <div className="w-full h-full">

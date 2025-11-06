@@ -5,6 +5,7 @@
 
 import type { ConversationMessage, MathProblem } from "./models";
 import type { TutorAnnotation } from "./canvas";
+import type { VisemeFrame } from "@/services/avatar/visemeMapper";
 
 /**
  * Chat API Request
@@ -38,6 +39,7 @@ export interface ChatResponse {
   message: ConversationMessage;
   annotations?: TutorAnnotation[]; // Story 3.4: Tutor annotations with resolved coordinates
   audio?: string; // Optional: Base64 data URL for TTS audio (generated server-side)
+  visemes?: VisemeFrame[]; // Phase 2: Viseme timeline for lip-sync
 }
 
 /**
