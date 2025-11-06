@@ -6,11 +6,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTutoringStore } from "@/stores/useTutoringStore";
 import { useSendMessage } from "@/hooks/useSendMessage";
 import { MessageBubble } from "./MessageBubble";
 import { ChatInput } from "./ChatInput";
 import { ProblemSelector } from "./ProblemSelector";
+import { MessageSkeleton } from "@/components/ui/Skeleton";
 import type { MathProblem } from "@/data/problems";
 import type { ConversationMessage } from "@/types/models";
 import type { WhiteboardRef } from "@/components/whiteboard/Whiteboard";
@@ -111,15 +113,33 @@ export function ChatInterface({ workspaceMode = false, whiteboardRef }: ChatInte
           </div>
         ) : (
           <>
-            {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
-            ))}
+            <AnimatePresence initial={false}>
+              {messages.map((message) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{
+                    duration: 0.3,
+                    ease: "easeOut",
+                    layout: { duration: 0.2 }
+                  }}
+                  layout
+                >
+                  <MessageBubble message={message} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
             {isLoading && (
-              <div className="flex justify-start mb-4">
-                <div className="bg-gray-100 rounded-lg px-4 py-2">
-                  <p className="text-sm text-gray-600">Tutor is thinking...</p>
-                </div>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <MessageSkeleton />
+              </motion.div>
             )}
             {/* Story 5.3: Error message display */}
             {error && (

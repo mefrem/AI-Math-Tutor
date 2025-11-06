@@ -28,6 +28,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       className = '',
       children,
       disabled,
+      onClick,
+      type,
       ...props
     },
     ref
@@ -52,11 +54,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <motion.button
         ref={ref}
-        whileHover={!disabled && !loading ? { scale: 1.02 } : {}}
-        whileTap={!disabled && !loading ? { scale: 0.98 } : {}}
+        whileHover={!disabled && !loading ? { scale: 1.02 } : undefined}
+        whileTap={!disabled && !loading ? { scale: 0.98 } : undefined}
         className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthClass} ${className}`}
         disabled={disabled || loading}
-        {...props}
+        onClick={onClick}
+        type={type}
+        {...(props as any)}
       >
         {loading ? (
           <>

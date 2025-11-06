@@ -5,8 +5,9 @@
 
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { useTutoringStore } from "@/stores/useTutoringStore";
 import { Whiteboard, WhiteboardRef } from "@/components/whiteboard/Whiteboard";
 import { ChatInterface } from "@/components/chat/ChatInterface";
@@ -14,14 +15,55 @@ import { RestartButton } from "@/components/controls/RestartButton";
 import { AvatarFallback } from "@/components/avatar/AvatarFallback";
 import { AudioProvider } from "@/contexts/AudioContext";
 import { VoiceSettings } from "@/components/settings/VoiceSettings";
-import { useState } from "react";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { KeyboardShortcutsHelp } from "@/components/ui/KeyboardShortcutsHelp";
+import type { KeyboardShortcut } from "@/hooks/useKeyboardShortcuts";
 
 export default function WorkspacePage() {
   const router = useRouter();
   const currentProblem = useTutoringStore((state) => state.currentProblem);
+  const messages = useTutoringStore((state) => state.messages);
   const isLoading = useTutoringStore((state) => state.isLoading);
+  const resetSession = useTutoringStore((state) => state.resetSession);
   const whiteboardRef = useRef<WhiteboardRef>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false);
+
+  // Calculate message counts
+  const messageCount = messages.length;
+  const studentMessages = messages.filter((m) => m.role === "student").length;
+  const tutorMessages = messages.filter((m) => m.role === "tutor").length;
+
+  // Define keyboard shortcuts
+  const shortcuts: KeyboardShortcut[] = [
+    {
+      key: "?",
+      shiftKey: true,
+      callback: () => setIsShortcutsHelpOpen(!isShortcutsHelpOpen),
+      description: "Show keyboard shortcuts",
+    },
+    {
+      key: "Escape",
+      callback: () => {
+        if (isSettingsOpen) setIsSettingsOpen(false);
+        if (isShortcutsHelpOpen) setIsShortcutsHelpOpen(false);
+      },
+      description: "Close modal",
+    },
+    {
+      key: "h",
+      callback: () => handleReturnToHome(),
+      description: "Return to home",
+    },
+    {
+      key: "s",
+      callback: () => setIsSettingsOpen(true),
+      description: "Open settings",
+    },
+  ];
+
+  // Register keyboard shortcuts
+  useKeyboardShortcuts(shortcuts);
 
   /**
    * Handle return to home
@@ -37,14 +79,60 @@ export default function WorkspacePage() {
     <main className="flex flex-col h-screen bg-gradient-to-b from-blue-50 to-white overflow-hidden">
       {/* Header with session controls */}
       <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-            Tutoring Workspace
-          </h1>
-          {currentProblem && (
-            <p className="text-xs md:text-sm text-gray-600">
-              Topic: {currentProblem.topic || "General Math"}
-            </p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+              Tutoring Workspace
+            </h1>
+            {currentProblem && (
+              <p className="text-xs md:text-sm text-gray-600">
+                Topic: {currentProblem.topic || "General Math"}
+              </p>
+            )}
+          </div>
+
+          {/* Progress indicators */}
+          {messageCount > 0 && (
+            <div className="flex items-center gap-2">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-200"
+              >
+                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+                <span className="text-sm font-medium text-blue-700">{messageCount}</span>
+              </motion.div>
+
+              {isLoading && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 rounded-full border border-purple-200"
+                >
+                  <div className="flex space-x-1">
+                    <motion.div
+                      className="w-1.5 h-1.5 bg-purple-500 rounded-full"
+                      animate={{ y: [0, -4, 0] }}
+                      transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 0.2 }}
+                    />
+                    <motion.div
+                      className="w-1.5 h-1.5 bg-purple-500 rounded-full"
+                      animate={{ y: [0, -4, 0] }}
+                      transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 0.2, delay: 0.15 }}
+                    />
+                    <motion.div
+                      className="w-1.5 h-1.5 bg-purple-500 rounded-full"
+                      animate={{ y: [0, -4, 0] }}
+                      transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 0.2, delay: 0.3 }}
+                    />
+                  </div>
+                  <span className="text-xs font-medium text-purple-700">Thinking</span>
+                </motion.div>
+              )}
+            </div>
           )}
         </div>
 
@@ -101,7 +189,31 @@ export default function WorkspacePage() {
 
         {/* Story 4.7: Voice settings modal */}
         <VoiceSettings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+
+        {/* Keyboard shortcuts help */}
+        <KeyboardShortcutsHelp
+          isOpen={isShortcutsHelpOpen}
+          onClose={() => setIsShortcutsHelpOpen(false)}
+          shortcuts={shortcuts}
+        />
       </AudioProvider>
+
+      {/* Floating keyboard shortcut hint */}
+      {!isShortcutsHelpOpen && (
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1 }}
+          onClick={() => setIsShortcutsHelpOpen(true)}
+          className="fixed bottom-4 right-4 p-2 bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full shadow-lg hover:shadow-xl transition-shadow text-gray-600 hover:text-gray-900"
+          aria-label="Show keyboard shortcuts"
+          title="Keyboard shortcuts (?)"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+        </motion.button>
+      )}
     </main>
   );
 }
