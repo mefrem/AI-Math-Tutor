@@ -161,3 +161,5 @@ Your agents are now fully integrated into Cursor via MCP! 🎉
 
 
 
+
+

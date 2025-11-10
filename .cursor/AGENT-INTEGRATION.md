@@ -175,3 +175,5 @@ The MCP server is configured in `~/.cursor/mcp.json`:
 
 
 
+
+

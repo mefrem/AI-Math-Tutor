@@ -5,9 +5,9 @@
   "scripts": {
     "clear-cache": "rm -rf .next && find . -name '.next' -type d -exec rm -rf {} + 2>/dev/null || true && rm -rf node_modules/.cache 2>/dev/null || true",
     "dev:clean": "npm run clear-cache && npm run dev",
-    "dev": "next dev",
+    "dev": "next dev -p 3006",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3006",
     "lint": "next lint",
     "prepare": "husky"
   },
