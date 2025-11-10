@@ -162,6 +162,89 @@ regex = '''your-regex-pattern'''
 - `npm start` - Start production server
 - `npm run lint` - Run ESLint
 
+## Deployment to Vercel
+
+This application is optimized for deployment on Vercel, the platform built by the creators of Next.js.
+
+### Prerequisites
+
+- A Vercel account (sign up at [vercel.com](https://vercel.com))
+- Your code pushed to a Git repository (GitHub, GitLab, or Bitbucket)
+- An OpenAI API key
+
+### Deployment Steps
+
+1. **Connect Your Repository**
+   - Go to [vercel.com](https://vercel.com) and log in
+   - Click "Add New..." → "Project"
+   - Import your GitHub/GitLab/Bitbucket repository
+   - Vercel will automatically detect the Next.js configuration
+
+2. **Configure Environment Variables**
+   - In the Vercel project configuration screen, add environment variables:
+     - `OPENAI_API_KEY` - Your OpenAI API key (required)
+   - These variables should be set for Production, Preview, and Development environments
+
+3. **Deploy**
+   - Click "Deploy"
+   - Vercel will build and deploy your application automatically
+   - Monitor the build logs for any errors
+   - Once complete, you'll receive a deployment URL (e.g., `your-project.vercel.app`)
+
+4. **Verify Deployment**
+   - Visit your deployment URL
+   - Test the following features:
+     - Landing page loads correctly
+     - Problem input (text and image upload)
+     - Tutoring workspace with whiteboard
+     - Chat functionality with AI tutor
+     - Text-to-speech (TTS) for tutor responses
+     - Speech-to-text (STT) for student input
+     - 2D avatar rendering and lip-sync
+
+### Automatic Deployments
+
+Once connected, Vercel will automatically:
+- Deploy the `main` branch to production
+- Create preview deployments for pull requests
+- Rebuild on every push to the repository
+
+### Configuration Files
+
+- **`.env.example`** - Template for required environment variables
+- **`vercel.json`** - Vercel-specific configuration (function timeouts, build settings)
+
+### Important Notes
+
+- **API Timeouts**: The `vercel.json` file configures a 60-second timeout for API routes to accommodate OpenAI API calls
+- **Static Assets**: The `public/` directory (including VRM avatar models) is automatically deployed as static assets
+- **Serverless Functions**: All API routes (`/api/*`) are deployed as serverless functions
+- **No Database Required**: The application is stateless and doesn't require a database setup
+
+### Troubleshooting
+
+**Build Failures**
+- Check build logs in Vercel dashboard
+- Ensure all dependencies are listed in `package.json`
+- Verify TypeScript compilation succeeds locally: `npm run build`
+
+**Environment Variables**
+- Ensure `OPENAI_API_KEY` is set in Vercel project settings
+- Variables must be configured for the appropriate environments (Production/Preview/Development)
+
+**API Errors**
+- Check function logs in Vercel dashboard
+- Verify OpenAI API key is valid and has sufficient credits
+- Check for rate limiting issues with OpenAI API
+
+### Custom Domain (Optional)
+
+To use a custom domain:
+1. Go to your project settings in Vercel
+2. Navigate to "Domains"
+3. Add your custom domain
+4. Follow the DNS configuration instructions
+
 ## License
 
 MIT
